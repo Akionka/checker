@@ -22,7 +22,6 @@ ini = inicfg.load({
 		posX = 40,
 		posY = 460,
 		color = 0xFF0000,
-
 		font = "Arial",
 		startmsg = true,
 		autoupdt = true,
@@ -65,7 +64,7 @@ local autoupdt = imgui.ImBool(ini.settings.autoupdt)
 local posX = imgui.ImInt(0)
 local posY = imgui.ImInt(0)
 local pos = imgui.ImVec2(0, 0)
-local fontA = imgui.ImBuffer('Arial', 256)
+local fontA = imgui.ImBuffer(ini.settings.font, 256)
 
 local r, g, b = imgui.ImColor(ini.color.r, ini.color.g, ini.color.b):GetFloat4()
 local color = imgui.ImFloat3(r, g, b)
@@ -84,7 +83,7 @@ function imgui.OnDrawFrame()
 		end
 		if imgui.InputText("Шрифт", fontA) then
 			ini.settings.font = fontA.v
-			font = renderCreateFont(ini.settings.font, 9, 14)
+			font = renderCreateFont(ini.settings.font, 9, 5)
 			inicfg.save(ini, "admins")
 		end
 		if imgui.ColorEdit3('Цвет текста', color) then
@@ -105,7 +104,6 @@ function imgui.OnDrawFrame()
 			inicfg.save(ini, "admins")
 		end
 		if imgui.Button("Update Log") then
-			--imgui.SetNextWindowPos(imgui.ImVec2(100, 100))
 			updtelog_window_state.v = not updtelog_window_state.v
 		end
 		if imgui.Button("Проверить обновления") then
@@ -114,7 +112,7 @@ function imgui.OnDrawFrame()
 		imgui.End()
   end
 	if updtelog_window_state.v then
-		imgui.Begin("Update Log", updtelog_window_state, 70)
+		imgui.Begin("Update Log", updtelog_window_state, 66)
 		imgui.Text(script_updatelog)
 		imgui.End()
 	end
@@ -141,7 +139,6 @@ function main()
 		sampAddChatMessage(u8:decode("[Admins]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов)."), -1)
 	end)
 	sampRegisterChatCommand("checker", function()
-		imgui.SetNextWindowPos(imgui.ImVec2(100, 100))
 		settings_window_state.v = not settings_window_state.v
 	end)
 	font = renderCreateFont(ini.settings.font, 9, 5)
