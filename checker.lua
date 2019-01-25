@@ -71,7 +71,7 @@ local r, g, b = imgui.ImColor(ini.color.r, ini.color.g, ini.color.b):GetFloat4()
 local color = imgui.ImFloat3(r, g, b)
 function imgui.OnDrawFrame()
   if settings_window_state.v then
-		imgui.Begin("Меню", settings_window_state, 70)
+		imgui.Begin("Меню", settings_window_state, 66)
 		posX.v = ini.settings.posX
 		posY.v = ini.settings.posY
 		if imgui.InputInt("X", posX) then
@@ -129,6 +129,7 @@ function main()
 	if ini.settings.startmsg then
 		sampAddChatMessage(u8:decode("[Admins]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}"..thisScript().version.."{FFFFFF}."), -1)
 		sampAddChatMessage(u8:decode("[Admins]: Автор - {2980b9}Akionka{FFFFFF}. Выключить данное сообщение можно в {2980b9}/checker{FFFFFF}."), -1)
+		sampAddChatMessage(u8:decode("[Admins]: Кстати, чтобы посмотреть список администраторов он-лайн введи {2980b9}/admins{FFFFFF}."), -1)
 	end
 
 	sampRegisterChatCommand("admins", function()
@@ -185,10 +186,10 @@ end
 function goupdate()
 	downloadUrlToFile("https://raw.githubusercontent.com/Akionka/checker/master/checker.lua", thisScript().path, function(id3, status1, p13, p23)
 		if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
-			sampAddChatMessage((u8:decode('[Admins]: Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...')), -1)
-			sampAddChatMessage((u8:decode('[Admins]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.')), -1)
-			sampAddChatMessage((u8:decode('[Admins]: Скорее всего прямо сейчас у вас сломался курсор. Введите {2980b9}/checker{FFFFFF}.')), -1)
-			sampAddChatMessage((u8:decode('[Admins]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka tele.run/akionka{FFFFFF}.')), -1)
+			sampAddChatMessage(u8:decode('[Admins]: Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...'), -1)
+			sampAddChatMessage(u8:decode('[Admins]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.'), -1)
+			sampAddChatMessage(u8:decode('[Admins]: Скорее всего прямо сейчас у вас сломался курсор. Введите {2980b9}/checker{FFFFFF}.'), -1)
+			sampAddChatMessage(u8:decode('[Admins]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka tele.run/akionka{FFFFFF}.'), -1)
 		end
 	end)
 end
