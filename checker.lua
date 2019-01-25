@@ -2,6 +2,8 @@ script_name('Admin Checker')
 script_author('akionka')
 script_version('1.0')
 script_version_number(1)
+script_updatelog = [[v1.0 [28.01.2019]
+I. Первый релиз. В общем и целом, скрипт работает.]]
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -56,6 +58,7 @@ function sampev.onPlayerJoin(id, clist, isNPC, nick)
 	end
 end
 local settings_window_state = imgui.ImBool(false)
+local updtelog_window_state = imgui.ImBool(false)
 local onscreen = imgui.ImBool(ini.settings.showonscreen)
 local startmsg = imgui.ImBool(ini.settings.startmsg)
 local autoupdt = imgui.ImBool(ini.settings.autoupdt)
@@ -67,7 +70,6 @@ local fontA = imgui.ImBuffer('Arial', 256)
 local r, g, b = imgui.ImColor(ini.color.r, ini.color.g, ini.color.b):GetFloat4()
 local color = imgui.ImFloat3(r, g, b)
 function imgui.OnDrawFrame()
-	imgui.SetNextWindowPos(imgui.ImVec2(100, 100))
   if settings_window_state.v then
 		imgui.Begin("Меню", settings_window_state, 70)
 		posX.v = ini.settings.posX
@@ -102,11 +104,20 @@ function imgui.OnDrawFrame()
 			ini.settings.autoupdt = autoupdt.v
 			inicfg.save(ini, "admins")
 		end
+		if imgui.Button("Update Log") then
+			--imgui.SetNextWindowPos(imgui.ImVec2(100, 100))
+			updtelog_window_state.v = not updtelog_window_state.v
+		end
 		if imgui.Button("Проверить обновления") then
 			lua_thread.create(update)
 		end
 		imgui.End()
   end
+	if updtelog_window_state.v then
+		imgui.Begin("Update Log", updtelog_window_state, 70)
+		imgui.Text(script_updatelog)
+		imgui.End()
+	end
 end
 
 function main()
@@ -114,6 +125,11 @@ function main()
   while not isSampAvailable() do wait(0) end
 
 	loadadmins()
+
+	if ini.settings.startmsg then
+		sampAddChatMessage(u8:decode("[Admins]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}"..thisScript().version.."{FFFFFF}."), -1)
+		sampAddChatMessage(u8:decode("[Admins]: Автор - {2980b9}Akionka{FFFFFF}. Выключить данное сообщение можно в {2980b9}/checker{FFFFFF}."), -1)
+	end
 
 	sampRegisterChatCommand("admins", function()
 		if #admins_online == 0 then sampAddChatMessage(u8:decode("[Admins]: Администраторов он-лайн нет."), -1) return true end
@@ -124,6 +140,7 @@ function main()
 		sampAddChatMessage(u8:decode("[Admins]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов)."), -1)
 	end)
 	sampRegisterChatCommand("checker", function()
+		imgui.SetNextWindowPos(imgui.ImVec2(100, 100))
 		settings_window_state.v = not settings_window_state.v
 	end)
 	font = renderCreateFont(ini.settings.font, 9, 5)
@@ -153,18 +170,10 @@ function update()
 					version = info.version
 					version_num = info.version_num
 					if version_num > thisScript().version_num then
-						sampAddChatMessage(u8:decode("[Admins]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..version.."{FFFFFF}."), -1)
-						if auto then sampAddChatMessage(ini.settings.autoupdate and u8:decode("[Admins]: Так как у вас {00FF00}включено{FFFFFF} автообновление, скрипт обновится прямо сейчас. Внимание! Игра или скрипт может вылететь.") or u8:decode("[Admins]: Так как у вас {FF0000}выключено{FFFFFF} автообновление, скрипт не будет обновляться, однако вы можете сделать это в /igmenu."), -1) end
-						if ini.settings.autoupdt then
-							lua_thread.create(goupdate)
-						elseif not auto then
-							lua_thread.create(goupdate)
-						else
-							updateinprogess = false
-						end
+						sampAddChatMessage(u8:decode("[Admins]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..version.."{FFFFFF}. Начинаю закачку."), -1)
+						lua_thread.create(goupdate)
 					else
-						if ini.settings.startmsg and auto then sampAddChatMessage(u8:decode("[Admins]: У вас установлена самая свежая версия скрипта."), -1)
-						elseif not auto then sampAddChatMessage(u8:decode("[Admins]: У вас установлена самая свежая версия скрипта."), -1) end
+						sampAddChatMessage(u8:decode("[Admins]: У вас установлена самая свежая версия скрипта."), -1)
 						updateinprogess = false
 					end
 				end
@@ -174,13 +183,12 @@ function update()
 end
 
 function goupdate()
-	wait(300)
 	downloadUrlToFile("https://raw.githubusercontent.com/Akionka/checker/master/checker.lua", thisScript().path, function(id3, status1, p13, p23)
 		if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
 			sampAddChatMessage((u8:decode('[Admins]: Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...')), -1)
-			sampAddChatMessage((u8:decode('[Admins]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение')), -1)
+			sampAddChatMessage((u8:decode('[Admins]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.')), -1)
 			sampAddChatMessage((u8:decode('[Admins]: Скорее всего прямо сейчас у вас сломался курсор. Введите {2980b9}/checker{FFFFFF}.')), -1)
-			sampAddChatMessage((u8:decode('[Admins]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > vk.com/akionka tele.run/akionka')), -1)
+			sampAddChatMessage((u8:decode('[Admins]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka tele.run/akionka{FFFFFF}.')), -1)
 		end
 	end)
 end
