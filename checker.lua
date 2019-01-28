@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
 script_version('1.1')
-script_version_number(1)
+script_version_number(0)
 script_updatelog = [[v1.0 [28.01.2019]
 I. Первый релиз. В общем и целом, скрипт работает.
 v1.1 [28.01.2019]
@@ -193,7 +193,7 @@ function goupdate()
 			sampAddChatMessage(u8:decode('[Admins]: Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...'), -1)
 			sampAddChatMessage(u8:decode('[Admins]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.'), -1)
 			sampAddChatMessage(u8:decode('[Admins]: Скорее всего прямо сейчас у вас сломался курсор. Введите {2980b9}/checker{FFFFFF}.'), -1)
-			sampAddChatMessage(u8:decode('[Admins]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka tele.run/akionka{FFFFFF}.'), -1)
+			sampAddChatMessage(u8:decode('[Admins]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka teleg.run/akionka{FFFFFF}.'), -1)
 		end
 	end)
 end
@@ -208,6 +208,11 @@ function loadadmins()
 		print(u8:decode('Файла с админами в директории <moonloader/config/adminlist.txt> не обнаружено, создан автоматически'))
 	  io.open("moonloader/config/adminlist.txt", "w"):close()
 	end
+end
+
+function argb_to_rgba(argb)
+  local a, r, g, b = explode_argb(argb)
+  return join_argb(r, g, b, a)
 end
 
 function explode_argb(argb)
