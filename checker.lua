@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
 script_version('1.1')
-script_version_number(2)
+script_version_number(1)
 script_updatelog = [[v1.0 [28.01.2019]
 I. Первый релиз. В общем и целом, скрипт работает.
 v1.1 [28.01.2019]
