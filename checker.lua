@@ -1,9 +1,11 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.0')
-script_version_number(1)
+script_version('1.1')
+script_version_number(2)
 script_updatelog = [[v1.0 [28.01.2019]
-I. Первый релиз. В общем и целом, скрипт работает.]]
+I. Первый релиз. В общем и целом, скрипт работает.
+v1.1 [28.01.2019]
+I. Вернул возможность отключить оповещения о входе/выходе администраторов]]
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -61,6 +63,7 @@ local updtelog_window_state = imgui.ImBool(false)
 local onscreen = imgui.ImBool(ini.settings.showonscreen)
 local startmsg = imgui.ImBool(ini.settings.startmsg)
 local autoupdt = imgui.ImBool(ini.settings.autoupdt)
+local shownofit = imgui.ImBool(ini.settings.shownofit)
 local posX = imgui.ImInt(0)
 local posY = imgui.ImInt(0)
 local pos = imgui.ImVec2(0, 0)
@@ -93,6 +96,10 @@ function imgui.OnDrawFrame()
 		end
 		if imgui.Checkbox("Рендер на экране", onscreen) then
 			ini.settings.showonscreen = onscreen.v
+			inicfg.save(ini, "admins")
+		end
+		if imgui.Checkbox("Оповещения о входе/выходе администраторов", shownofit) then
+			ini.settings.shownofit = shownofit.v
 			inicfg.save(ini, "admins")
 		end
 		if imgui.Checkbox("Стартовое сообщение", startmsg) then
