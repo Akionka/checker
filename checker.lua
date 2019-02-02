@@ -1,11 +1,13 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.1')
-script_version_number(0)
+script_version('1.2')
+script_version_number(3)
 script_updatelog = [[v1.0 [28.01.2019]
 I. Первый релиз. В общем и целом, скрипт работает.
 v1.1 [28.01.2019]
-I. Вернул возможность отключить оповещения о входе/выходе администраторов]]
+I. Вернул возможность отключить оповещения о входе/выходе администраторов
+v1.2 [03.02.2019]
+I. Убрал автообновление. Не работает из-за imgui.]]
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -25,8 +27,7 @@ ini = inicfg.load({
 		posY = 460,
 		color = 0xFF0000,
 		font = "Arial",
-		startmsg = true,
-		autoupdt = true,
+		startmsg = true
 	},
 	color = {
 		r = 255,
@@ -62,7 +63,6 @@ local settings_window_state = imgui.ImBool(false)
 local updtelog_window_state = imgui.ImBool(false)
 local onscreen = imgui.ImBool(ini.settings.showonscreen)
 local startmsg = imgui.ImBool(ini.settings.startmsg)
-local autoupdt = imgui.ImBool(ini.settings.autoupdt)
 local shownofit = imgui.ImBool(ini.settings.shownofit)
 local posX = imgui.ImInt(0)
 local posY = imgui.ImInt(0)
@@ -104,10 +104,6 @@ function imgui.OnDrawFrame()
 		end
 		if imgui.Checkbox("Стартовое сообщение", startmsg) then
 			ini.settings.startmsg = startmsg.v
-			inicfg.save(ini, "admins")
-		end
-		if imgui.Checkbox("Автообновление", autoupdt) then
-			ini.settings.autoupdt = autoupdt.v
 			inicfg.save(ini, "admins")
 		end
 		if imgui.Button("Update Log") then
@@ -175,8 +171,9 @@ function update()
 					version = info.version
 					version_num = info.version_num
 					if version_num > thisScript().version_num then
-						sampAddChatMessage(u8:decode("[Admins]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..version.."{FFFFFF}. Начинаю закачку."), -1)
-						lua_thread.create(goupdate)
+						sampAddChatMessage(u8:decode("[Admins]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..version.."{FFFFFF}."), -1)
+						sampAddChatMessage(u8:decode("[Admins]: Но скачивать придется самому :( {2980b9}https://utka.su/hcQRW{FFFFFF}."), -1)
+						updateinprogess = false
 					else
 						sampAddChatMessage(u8:decode("[Admins]: У вас установлена самая свежая версия скрипта."), -1)
 						updateinprogess = false
@@ -194,6 +191,7 @@ function goupdate()
 			sampAddChatMessage(u8:decode('[Admins]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.'), -1)
 			sampAddChatMessage(u8:decode('[Admins]: Скорее всего прямо сейчас у вас сломался курсор. Введите {2980b9}/checker{FFFFFF}.'), -1)
 			sampAddChatMessage(u8:decode('[Admins]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka teleg.run/akionka{FFFFFF}.'), -1)
+			updateinprogess = false
 		end
 	end)
 end
