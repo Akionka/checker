@@ -172,7 +172,7 @@ function update()
 					version_num = info.version_num
 					if version_num > thisScript().version_num then
 						sampAddChatMessage(u8:decode("[Admins]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..version.."{FFFFFF}."), -1)
-						sampAddChatMessage(u8:decode("[Admins]: Но скачивать придется самому :( {2980b9}https://utka.su/hcQRW{FFFFFF}."), -1)
+						sampAddChatMessage(u8:decode("[Admins]: Но скачивать придется самому :( {2980b9}https://utka.su/0TLPz{FFFFFF}."), -1)
 						updateinprogess = false
 					else
 						sampAddChatMessage(u8:decode("[Admins]: У вас установлена самая свежая версия скрипта."), -1)
