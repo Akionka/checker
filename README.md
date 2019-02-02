@@ -22,7 +22,7 @@
 
 ### Требования
 
-- [Moonloader](https://blast.hk/threads/13305/)
+- [Moonloader](http://blast.hk/moonloader)
 - [CLEO 4](https://cleo.li)
-- [Sampfuncs](https://blast.hk/threads/17/)
+- [Sampfuncs](https://blast.hk/sampfuncs)
 - Библиотеки: SAMP.Lua, ini.cfg, imgui(уже присутствует в папке lib)
