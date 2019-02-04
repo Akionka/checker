@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.4')
-script_version_number(5)
+script_version('1.5')
+script_version_number(6)
 script_updatelog = [[v1.0 [28.01.2019]
 I. Первый релиз. В общем и целом, скрипт работает
 v1.1 [28.01.2019]
@@ -130,7 +130,7 @@ function main()
   while not isSampAvailable() do wait(0) end
 
 	update()
-	while updateinprogess ~= false do wait(0) end
+	while updateinprogess ~= false do wait(0) if isGoUpdate then goupdate() end end
 	loadadmins()
 
 	if ini.settings.startmsg then
