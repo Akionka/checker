@@ -1,13 +1,16 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.2')
-script_version_number(3)
+script_version('1.3')
+script_version_number(4)
 script_updatelog = [[v1.0 [28.01.2019]
-I. Первый релиз. В общем и целом, скрипт работает.
+I. Первый релиз. В общем и целом, скрипт работает
 v1.1 [28.01.2019]
 I. Вернул возможность отключить оповещения о входе/выходе администраторов
 v1.2 [03.02.2019]
-I. Убрал автообновление. Не работает из-за imgui.]]
+I. Убрал автообновление. Не работает из-за imgui
+v1.3 [04.02.2019]
+I. Пофиксил автообновление
+II. Пофиксил создание файла с админами]]
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -126,6 +129,7 @@ function main()
   while not isSampAvailable() do wait(0) end
 
 	loadadmins()
+	lua_thread.create(update)
 
 	if ini.settings.startmsg then
 		sampAddChatMessage(u8:decode("[Admins]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}"..thisScript().version.."{FFFFFF}."), -1)
@@ -147,6 +151,7 @@ function main()
 	font = renderCreateFont(ini.settings.font, 9, 5)
 	while true do
 		wait(0)
+		if isGoUpdate then goupdate() break end
 		if ini.settings.showonscreen then
 			local renderPosY = ini.settings.posY
 			renderFontDrawText(font, "Admins Online ["..#admins_online.."]:", ini.settings.posX, ini.settings.posY, bit.bor(ini.settings.color, 0xFF000000))
@@ -171,9 +176,8 @@ function update()
 					version = info.version
 					version_num = info.version_num
 					if version_num > thisScript().version_num then
-						sampAddChatMessage(u8:decode("[Admins]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..version.."{FFFFFF}."), -1)
-						sampAddChatMessage(u8:decode("[Admins]: Но скачивать придется самому :( {2980b9}https://utka.su/0TLPz{FFFFFF}."), -1)
-						updateinprogess = false
+						sampAddChatMessage(u8:decode("[Admins]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..version.."{FFFFFF}. Начинаю закачку."), -1)
+						isGoUpdate = true
 					else
 						sampAddChatMessage(u8:decode("[Admins]: У вас установлена самая свежая версия скрипта."), -1)
 						updateinprogess = false
@@ -204,7 +208,7 @@ function loadadmins()
 		print(u8:decode('Загрузка закончена. Загружено: '..#admins..' админов.'))
 	else
 		print(u8:decode('Файла с админами в директории <moonloader/config/adminlist.txt> не обнаружено, создан автоматически'))
-	  io.open("moonloader/config/adminlist.txt", "w"):close()
+		io.close(io.open("moonloader/config/adminlist.txt", "w"))
 	end
 end
 
