@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.3')
-script_version_number(4)
+script_version('1.4')
+script_version_number(5)
 script_updatelog = [[v1.0 [28.01.2019]
 I. Первый релиз. В общем и целом, скрипт работает
 v1.1 [28.01.2019]
@@ -17,12 +17,13 @@ local encoding = require 'encoding'
 local inicfg = require 'inicfg'
 local imgui = require 'imgui'
 local dlstatus = require 'moonloader'.download_status
+local isGoUpdate
 encoding.default = 'cp1251'
 u8 = encoding.UTF8
 
-admins = {}
-admins_online = {}
-ini = inicfg.load({
+local admins = {}
+local admins_online = {}
+local ini = inicfg.load({
 	settings = {
 		shownofit = true,
 		showonscreen = false,
@@ -128,8 +129,9 @@ function main()
   if not isSampfuncsLoaded() or not isSampLoaded() then return end
   while not isSampAvailable() do wait(0) end
 
+	update()
+	while updateinprogess ~= false do wait(0) end
 	loadadmins()
-	lua_thread.create(update)
 
 	if ini.settings.startmsg then
 		sampAddChatMessage(u8:decode("[Admins]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}"..thisScript().version.."{FFFFFF}."), -1)
