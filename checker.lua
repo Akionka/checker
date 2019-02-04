@@ -130,7 +130,7 @@ function main()
   while not isSampAvailable() do wait(0) end
 
 	update()
-	while updateinprogess ~= false do wait(0) if isGoUpdate then goupdate() end end
+	while updateinprogess ~= false do wait(0) if isGoUpdate then isGoUpdate = false goupdate() end end
 	loadadmins()
 
 	if ini.settings.startmsg then
