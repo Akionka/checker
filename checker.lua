@@ -1,16 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.5')
-script_version_number(6)
-script_updatelog = [[v1.0 [28.01.2019]
-I. Первый релиз. В общем и целом, скрипт работает
-v1.1 [28.01.2019]
-I. Вернул возможность отключить оповещения о входе/выходе администраторов
-v1.2 [03.02.2019]
-I. Убрал автообновление. Не работает из-за imgui
-v1.3 [04.02.2019]
-I. Пофиксил автообновление
-II. Пофиксил создание файла с админами]]
+script_version('1.6')
+script_version_number(7)
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -110,12 +101,6 @@ function imgui.OnDrawFrame()
 			ini.settings.startmsg = startmsg.v
 			inicfg.save(ini, "admins")
 		end
-		if imgui.Button("Update Log") then
-			updtelog_window_state.v = not updtelog_window_state.v
-		end
-		if imgui.Button("Проверить обновления") then
-			lua_thread.create(update)
-		end
 		imgui.End()
   end
 	if updtelog_window_state.v then
@@ -131,7 +116,17 @@ function main()
 
 	update()
 	while updateinprogess ~= false do wait(0) if isGoUpdate then isGoUpdate = false goupdate() end end
+
 	loadadmins()
+	for id = 0, 1000 do
+		for i, v in ipairs(admins) do
+			if sampIsPlayerConnected(id) then
+				if sampGetPlayerNickname(id) == v then
+					table.insert(admins_online, {nick = v, id = id})
+				end
+			end
+		end
+	end
 
 	if ini.settings.startmsg then
 		sampAddChatMessage(u8:decode("[Admins]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}"..thisScript().version.."{FFFFFF}."), -1)
@@ -167,6 +162,17 @@ function main()
 	end
 end
 
+function loadadmins()
+	if doesFileExist("moonloader/config/adminlist.txt") then
+		for admin in io.lines("moonloader/config/adminlist.txt") do
+			table.insert(admins, admin:match("(%S+)"))
+		end
+		print(u8:decode('Загрузка закончена. Загружено: '..#admins..' админов.'))
+	else
+		print(u8:decode('Файла с админами в директории <moonloader/config/adminlist.txt> не обнаружено, создан автоматически'))
+		io.close(io.open("moonloader/config/adminlist.txt", "w"))
+	end
+end
 function update()
 	local fpath = os.getenv('TEMP') .. '\\checker-version.json'
 	downloadUrlToFile('https://raw.githubusercontent.com/Akionka/checker/master/version.json', fpath, function(id, status, p1, p2)
@@ -189,7 +195,6 @@ function update()
 		end
 	end)
 end
-
 function goupdate()
 	downloadUrlToFile("https://raw.githubusercontent.com/Akionka/checker/master/checker.lua", thisScript().path, function(id3, status1, p13, p23)
 		if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
@@ -201,32 +206,6 @@ function goupdate()
 		end
 	end)
 end
-
-function loadadmins()
-	if doesFileExist("moonloader/config/adminlist.txt") then
-		for admin in io.lines("moonloader/config/adminlist.txt") do
-			table.insert(admins, admin:match("(%S+)"))
-		end
-		print(u8:decode('Загрузка закончена. Загружено: '..#admins..' админов.'))
-	else
-		print(u8:decode('Файла с админами в директории <moonloader/config/adminlist.txt> не обнаружено, создан автоматически'))
-		io.close(io.open("moonloader/config/adminlist.txt", "w"))
-	end
-end
-
-function argb_to_rgba(argb)
-  local a, r, g, b = explode_argb(argb)
-  return join_argb(r, g, b, a)
-end
-
-function explode_argb(argb)
-  local a = bit.band(bit.rshift(argb, 24), 0xFF)
-  local r = bit.band(bit.rshift(argb, 16), 0xFF)
-  local g = bit.band(bit.rshift(argb, 8), 0xFF)
-  local b = bit.band(argb, 0xFF)
-  return a, r, g, b
-end
-
 function join_argb(a, r, g, b)
    local argb = b
    argb = bit.bor(argb, bit.lshift(g, 8))
@@ -234,7 +213,3 @@ function join_argb(a, r, g, b)
    argb = bit.bor(argb, bit.lshift(a, 24))
    return argb
 end
-
-function ARGBtoRGB(color) return bit32 or require'bit'.band(color, 0xFFFFFF) end
-
-function trim(s) return (string.gsub(s, "^%s*(.-)%s*$", "%1")) end
