@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.6')
-script_version_number(7)
+script_version('1.7')
+script_version_number(8)
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -21,6 +21,7 @@ local ini = inicfg.load({
 		posX = 40,
 		posY = 460,
 		color = 0xFF0000,
+		color = 0xFF0000,
 		font = "Arial",
 		startmsg = true
 	},
@@ -34,7 +35,7 @@ local ini = inicfg.load({
 function sampev.onPlayerQuit(id, reason)
 	for i, v in ipairs(admins_online) do
 		if v["id"] == id then
-			if ini.settings.shownofit then
+			if ini.settings.shownotif then
 				sampAddChatMessage(u8:decode("[Admins]: Администратор {2980b9}"..v["nick"].."{FFFFFF} покинул сервер."), -1)
 			end
 			table.remove(admins_online, i)
@@ -55,7 +56,6 @@ function sampev.onPlayerJoin(id, clist, isNPC, nick)
 	end
 end
 local settings_window_state = imgui.ImBool(false)
-local updtelog_window_state = imgui.ImBool(false)
 local onscreen = imgui.ImBool(ini.settings.showonscreen)
 local startmsg = imgui.ImBool(ini.settings.startmsg)
 local shownofit = imgui.ImBool(ini.settings.shownofit)
@@ -103,11 +103,6 @@ function imgui.OnDrawFrame()
 		end
 		imgui.End()
   end
-	if updtelog_window_state.v then
-		imgui.Begin("Update Log", updtelog_window_state, 66)
-		imgui.Text(script_updatelog)
-		imgui.End()
-	end
 end
 
 function main()
@@ -138,7 +133,7 @@ function main()
 		if #admins_online == 0 then sampAddChatMessage(u8:decode("[Admins]: Администраторов он-лайн нет."), -1) return true end
 		sampAddChatMessage(u8:decode("[Admins]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов):"), -1)
 		for i, v in ipairs(admins_online) do
-			sampAddChatMessage(u8:decode("[Admins]: {2980b9}"..v["nick"].."{FFFFFF}."), -1)
+			sampAddChatMessage(u8:decode("[Admins]: {2980b9}"..v["nick"].." ["..v["id"].."]{FFFFFF}."), -1)
 		end
 		sampAddChatMessage(u8:decode("[Admins]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов)."), -1)
 	end)
