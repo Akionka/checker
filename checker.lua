@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.7')
-script_version_number(8)
+script_version('1.7.1')
+script_version_number(9)
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -16,7 +16,7 @@ local admins = {}
 local admins_online = {}
 local ini = inicfg.load({
 	settings = {
-		shownofit = true,
+		shownotif = true,
 		showonscreen = false,
 		posX = 40,
 		posY = 460,
@@ -48,7 +48,7 @@ function sampev.onPlayerJoin(id, clist, isNPC, nick)
 	for i, v in ipairs(admins) do
 		if nick == v then
 			table.insert(admins_online, {nick = nick, id = id})
-			if ini.settings.shownofit then
+			if ini.settings.shownotif then
 				sampAddChatMessage(u8:decode("[Admins]: Администратор {2980b9}"..nick.."{FFFFFF} зашел на сервер."), -1)
 			end
 			break
@@ -58,7 +58,7 @@ end
 local settings_window_state = imgui.ImBool(false)
 local onscreen = imgui.ImBool(ini.settings.showonscreen)
 local startmsg = imgui.ImBool(ini.settings.startmsg)
-local shownofit = imgui.ImBool(ini.settings.shownofit)
+local shownotif = imgui.ImBool(ini.settings.shownotif)
 local posX = imgui.ImInt(0)
 local posY = imgui.ImInt(0)
 local pos = imgui.ImVec2(0, 0)
@@ -93,8 +93,8 @@ function imgui.OnDrawFrame()
 			ini.settings.showonscreen = onscreen.v
 			inicfg.save(ini, "admins")
 		end
-		if imgui.Checkbox("Оповещения о входе/выходе администраторов", shownofit) then
-			ini.settings.shownofit = shownofit.v
+		if imgui.Checkbox("Оповещения о входе/выходе администраторов", shownotif) then
+			ini.settings.shownotif = shownotif.v
 			inicfg.save(ini, "admins")
 		end
 		if imgui.Checkbox("Стартовое сообщение", startmsg) then
