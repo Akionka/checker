@@ -14,13 +14,13 @@ u8 = encoding.UTF8
 
 local admins = {}
 local admins_online = {}
+
 local ini = inicfg.load({
 	settings = {
 		shownotif = true,
 		showonscreen = false,
 		posX = 40,
 		posY = 460,
-		color = 0xFF0000,
 		color = 0xFF0000,
 		font = "Arial",
 		startmsg = true
@@ -29,7 +29,7 @@ local ini = inicfg.load({
 		r = 255,
 		g = 255,
 		b = 255,
-	}
+	},
 }, "admins")
 
 function sampev.onPlayerQuit(id, reason)
