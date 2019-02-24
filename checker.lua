@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.7.2')
-script_version_number(10)
+script_version('1.7.3')
+script_version_number(11)
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -68,7 +68,7 @@ local r, g, b = imgui.ImColor(ini.color.r, ini.color.g, ini.color.b):GetFloat4()
 local color = imgui.ImFloat3(r, g, b)
 function imgui.OnDrawFrame()
   if settings_window_state.v then
-		imgui.Begin("Меню", settings_window_state, imgui.WindowFlags.AlwaysAutoResize)
+		imgui.Begin("Admin Checker v"..thisScript().version, settings_window_state, imgui.WindowFlags.AlwaysAutoResize)
 		posX.v = ini.settings.posX
 		posY.v = ini.settings.posY
 		if imgui.InputInt("X", posX) then
@@ -115,7 +115,6 @@ function main()
 	update()
 	while updateinprogess ~= false do wait(0) if isGoUpdate then isGoUpdate = false goupdate() end end
 
-	loadadmins()
 	rebuildadmins()
 
 	if ini.settings.startmsg then
@@ -154,6 +153,7 @@ function main()
 end
 
 function loadadmins()
+	admins = {}
 	if doesFileExist("moonloader/config/adminlist.txt") then
 		for admin in io.lines("moonloader/config/adminlist.txt") do
 			table.insert(admins, admin:match("(%S+)"))
@@ -166,6 +166,7 @@ function loadadmins()
 end
 
 function rebuildadmins()
+	loadadmins()
 	admins_online = {}
 	for id = 0, 1000 do
 		for i, v in ipairs(admins) do
