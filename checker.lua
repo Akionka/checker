@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.7.1')
-script_version_number(9)
+script_version('1.7.2')
+script_version_number(10)
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
