@@ -68,7 +68,7 @@ local r, g, b = imgui.ImColor(ini.color.r, ini.color.g, ini.color.b):GetFloat4()
 local color = imgui.ImFloat3(r, g, b)
 function imgui.OnDrawFrame()
   if settings_window_state.v then
-		imgui.Begin("Меню", settings_window_state, 66)
+		imgui.Begin("Меню", settings_window_state, imgui.WindowFlags.AlwaysAutoResize)
 		posX.v = ini.settings.posX
 		posY.v = ini.settings.posY
 		if imgui.InputInt("X", posX) then
@@ -101,6 +101,9 @@ function imgui.OnDrawFrame()
 			ini.settings.startmsg = startmsg.v
 			inicfg.save(ini, "admins")
 		end
+		if imgui.Button("Перезагрузить админов") then
+			rebuildadmins()
+		end
 		imgui.End()
   end
 end
@@ -113,15 +116,7 @@ function main()
 	while updateinprogess ~= false do wait(0) if isGoUpdate then isGoUpdate = false goupdate() end end
 
 	loadadmins()
-	for id = 0, 1000 do
-		for i, v in ipairs(admins) do
-			if sampIsPlayerConnected(id) then
-				if sampGetPlayerNickname(id) == v then
-					table.insert(admins_online, {nick = v, id = id})
-				end
-			end
-		end
-	end
+	rebuildadmins()
 
 	if ini.settings.startmsg then
 		sampAddChatMessage(u8:decode("[Admins]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}"..thisScript().version.."{FFFFFF}."), -1)
@@ -138,6 +133,7 @@ function main()
 		sampAddChatMessage(u8:decode("[Admins]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов)."), -1)
 	end)
 	sampRegisterChatCommand("checker", function()
+		imgui.SetNextWindowPos(imgui.ImVec2(200, 500), imgui.Cond.Always)
 		settings_window_state.v = not settings_window_state.v
 	end)
 	font = renderCreateFont(ini.settings.font, 9, 5)
@@ -168,6 +164,21 @@ function loadadmins()
 		io.close(io.open("moonloader/config/adminlist.txt", "w"))
 	end
 end
+
+function rebuildadmins()
+	admins_online = {}
+	for id = 0, 1000 do
+		for i, v in ipairs(admins) do
+			if sampIsPlayerConnected(id) then
+				if sampGetPlayerNickname(id) == v then
+					table.insert(admins_online, {nick = v, id = id})
+				end
+			end
+		end
+	end
+	sampAddChatMessage(u8:decode("[Admins]: Список админов онлайн перезагружен."), -1)
+end
+
 function update()
 	local fpath = os.getenv('TEMP') .. '\\checker-version.json'
 	downloadUrlToFile('https://raw.githubusercontent.com/Akionka/checker/master/version.json', fpath, function(id, status, p1, p2)
