@@ -107,6 +107,7 @@ function imgui.OnDrawFrame()
 		if updatesavaliable then
 			if imgui.Button('Скачать обновление') then
 				update('https://raw.githubusercontent.com/Akionka/checker/master/checker.lua')
+				settings_window_state.v = false
 			end
 		else
 			if imgui.Button('Проверить обновление') then
@@ -225,6 +226,7 @@ function update(url)
 			sampAddChatMessage(u8:decode('[Checker]: Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...'), -1)
 			sampAddChatMessage(u8:decode('[Checker]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.'), -1)
 			sampAddChatMessage(u8:decode('[Checker]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka teleg.run/akionka{FFFFFF}.'), -1)
+			thisScript():reload()
 		end
 	end)
 end
