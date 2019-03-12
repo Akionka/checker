@@ -55,7 +55,7 @@ function sampev.onPlayerJoin(id, clist, isNPC, nick)
 		end
 	end
 end
-local settings_window_state = imgui.ImBool(false)
+local main_window_state = imgui.ImBool(false)
 local onscreen = imgui.ImBool(ini.settings.showonscreen)
 local startmsg = imgui.ImBool(ini.settings.startmsg)
 local shownotif = imgui.ImBool(ini.settings.shownotif)
@@ -67,8 +67,8 @@ local fontA = imgui.ImBuffer(ini.settings.font, 256)
 local r, g, b = imgui.ImColor(ini.color.r, ini.color.g, ini.color.b):GetFloat4()
 local color = imgui.ImFloat3(r, g, b)
 function imgui.OnDrawFrame()
-  if settings_window_state.v then
-		imgui.Begin("Admin Checker v"..thisScript().version, settings_window_state, imgui.WindowFlags.AlwaysAutoResize)
+  if main_window_state.v then
+		imgui.Begin(thisScript().name.." v"..thisScript().version, main_window_state, imgui.WindowFlags.AlwaysAutoResize)
 		posX.v = ini.settings.posX
 		posY.v = ini.settings.posY
 		if imgui.InputInt("X", posX) then
@@ -107,7 +107,7 @@ function imgui.OnDrawFrame()
 		if updatesavaliable then
 			if imgui.Button('Скачать обновление') then
 				update('https://raw.githubusercontent.com/Akionka/checker/master/checker.lua')
-				settings_window_state.v = false
+				main_window_state.v = false
 			end
 		else
 			if imgui.Button('Проверить обновление') then
@@ -142,7 +142,7 @@ function main()
 
 	sampRegisterChatCommand("checker", function()
 		imgui.SetNextWindowPos(imgui.ImVec2(200, 500), imgui.Cond.Always)
-		settings_window_state.v = not settings_window_state.v
+		main_window_state.v = not main_window_state.v
 	end)
 
 	font = renderCreateFont(ini.settings.font, 9, 5)
@@ -159,7 +159,7 @@ function main()
 				renderPosY = renderPosY + 15
 			end
 		end
-		imgui.Process = settings_window_state.v
+		imgui.Process = main_window_state.v
 	end
 end
 
