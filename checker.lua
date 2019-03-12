@@ -8,7 +8,6 @@ local encoding = require 'encoding'
 local inicfg = require 'inicfg'
 local imgui = require 'imgui'
 local dlstatus = require 'moonloader'.download_status
-local isGoUpdate = false
 local updatesavaliable = false
 encoding.default = 'cp1251'
 u8 = encoding.UTF8
