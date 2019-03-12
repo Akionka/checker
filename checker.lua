@@ -221,7 +221,7 @@ function checkupdates(json)
 end
 
 function update(url)
-	downloadUrlToFile(url, thisScript().path..'.upd', function(_, status1, _, _)
+	downloadUrlToFile(url, thisScript().path, function(_, status1, _, _)
 		if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
 			sampAddChatMessage(u8:decode('[Checker]: Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...'), -1)
 			sampAddChatMessage(u8:decode('[Checker]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.'), -1)
