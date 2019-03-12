@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.7.3')
-script_version_number(11)
+script_version('1.8')
+script_version_number(12)
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -9,6 +9,7 @@ local inicfg = require 'inicfg'
 local imgui = require 'imgui'
 local dlstatus = require 'moonloader'.download_status
 local isGoUpdate = false
+local updatesavaliable = false
 encoding.default = 'cp1251'
 u8 = encoding.UTF8
 
@@ -36,7 +37,7 @@ function sampev.onPlayerQuit(id, reason)
 	for i, v in ipairs(admins_online) do
 		if v["id"] == id then
 			if ini.settings.shownotif then
-				sampAddChatMessage(u8:decode("[Admins]: Администратор {2980b9}"..v["nick"].."{FFFFFF} покинул сервер."), -1)
+				sampAddChatMessage(u8:decode("[Checker]: Администратор {2980b9}"..v["nick"].."{FFFFFF} покинул сервер."), -1)
 			end
 			table.remove(admins_online, i)
 			break
@@ -49,7 +50,7 @@ function sampev.onPlayerJoin(id, clist, isNPC, nick)
 		if nick == v then
 			table.insert(admins_online, {nick = nick, id = id})
 			if ini.settings.shownotif then
-				sampAddChatMessage(u8:decode("[Admins]: Администратор {2980b9}"..nick.."{FFFFFF} зашел на сервер."), -1)
+				sampAddChatMessage(u8:decode("[Checker]: Администратор {2980b9}"..nick.."{FFFFFF} зашел на сервер."), -1)
 			end
 			break
 		end
@@ -102,7 +103,16 @@ function imgui.OnDrawFrame()
 			inicfg.save(ini, "admins")
 		end
 		if imgui.Button("Перезагрузить админов") then
-			rebuildadmins()
+	    	rebuildadmins()
+		end
+		if updatesavaliable then
+			if imgui.Button('Скачать обновление') then
+				update('https://raw.githubusercontent.com/Akionka/checker/master/checker.lua')
+			end
+		else
+			if imgui.Button('Проверить обновление') then
+				checkupdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json')
+			end
 		end
 		imgui.End()
   end
@@ -112,30 +122,31 @@ function main()
   if not isSampfuncsLoaded() or not isSampLoaded() then return end
   while not isSampAvailable() do wait(0) end
 
-	update()
-	while updateinprogess ~= false do wait(0) if isGoUpdate then isGoUpdate = false goupdate() end end
-
+	checkupdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json')
 	rebuildadmins()
 
 	if ini.settings.startmsg then
-		sampAddChatMessage(u8:decode("[Admins]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}"..thisScript().version.."{FFFFFF}."), -1)
-		sampAddChatMessage(u8:decode("[Admins]: Автор - {2980b9}Akionka{FFFFFF}. Выключить данное сообщение можно в {2980b9}/checker{FFFFFF}."), -1)
-		sampAddChatMessage(u8:decode("[Admins]: Кстати, чтобы посмотреть список администраторов он-лайн введи {2980b9}/admins{FFFFFF}."), -1)
+		sampAddChatMessage(u8:decode("[Checker]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}"..thisScript().version.."{FFFFFF}."), -1)
+		sampAddChatMessage(u8:decode("[Checker]: Автор - {2980b9}Akionka{FFFFFF}. Выключить данное сообщение можно в {2980b9}/checker{FFFFFF}."), -1)
+		sampAddChatMessage(u8:decode("[Checker]: Кстати, чтобы посмотреть список администраторов он-лайн введи {2980b9}/admins{FFFFFF}."), -1)
 	end
 
 	sampRegisterChatCommand("admins", function()
-		if #admins_online == 0 then sampAddChatMessage(u8:decode("[Admins]: Администраторов он-лайн нет."), -1) return true end
-		sampAddChatMessage(u8:decode("[Admins]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов):"), -1)
+		if #admins_online == 0 then sampAddChatMessage(u8:decode("[Checker]: Администраторов он-лайн нет."), -1) return true end
+		sampAddChatMessage(u8:decode("[Checker]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов):"), -1)
 		for i, v in ipairs(admins_online) do
-			sampAddChatMessage(u8:decode("[Admins]: {2980b9}"..v["nick"].." ["..v["id"].."]{FFFFFF}."), -1)
+			sampAddChatMessage(u8:decode("[Checker]: {2980b9}"..v["nick"].." ["..v["id"].."]{FFFFFF}."), -1)
 		end
-		sampAddChatMessage(u8:decode("[Admins]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов)."), -1)
+		sampAddChatMessage(u8:decode("[Checker]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов)."), -1)
 	end)
+
 	sampRegisterChatCommand("checker", function()
 		imgui.SetNextWindowPos(imgui.ImVec2(200, 500), imgui.Cond.Always)
 		settings_window_state.v = not settings_window_state.v
 	end)
+
 	font = renderCreateFont(ini.settings.font, 9, 5)
+
 	while true do
 		wait(0)
 		if isGoUpdate then goupdate() break end
@@ -177,42 +188,48 @@ function rebuildadmins()
 			end
 		end
 	end
-	sampAddChatMessage(u8:decode("[Admins]: Список админов онлайн перезагружен."), -1)
+	sampAddChatMessage(u8:decode("[Checker]: Список админов онлайн перезагружен."), -1)
 end
 
-function update()
-	local fpath = os.getenv('TEMP') .. '\\checker-version.json'
-	downloadUrlToFile('https://raw.githubusercontent.com/Akionka/checker/master/version.json', fpath, function(id, status, p1, p2)
-		if status == dlstatus.STATUS_ENDDOWNLOADDATA then
-			local f = io.open(fpath, 'r')
-			if f then
-				local info = decodeJson(f:read('*a'))
-				if info and info.version then
-					version = info.version
-					version_num = info.version_num
-					if version_num > thisScript().version_num then
-						sampAddChatMessage(u8:decode("[Admins]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..version.."{FFFFFF}. Начинаю закачку."), -1)
-						isGoUpdate = true
+function checkupdates(json)
+	local fpath = os.getenv('TEMP')..'\\'..thisScript().name..'-version.json'
+	if doesFileExist(fpath) then os.remove(fpath) end
+	downloadUrlToFile(json, fpath, function(_, status, _, _)
+		if status == dlstatus.STATUSEX_ENDDOWNLOAD then
+			if doesFileExist(fpath) then
+				local f = io.open(fpath, 'r')
+				if f then
+					local info = decodeJson(f:read('*a'))
+					local updateversion = info.version_num
+					f:close()
+					os.remove(fpath)
+					if updateversion > thisScript().version_num then
+						updatesavaliable = true
+						sampAddChatMessage(u8:decode("[Checker]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..updateversion.."{FFFFFF}."), -1)
+						return true
 					else
-						sampAddChatMessage(u8:decode("[Admins]: У вас установлена самая свежая версия скрипта."), -1)
-						updateinprogess = false
+						updatesavaliable = false
+						sampAddChatMessage(u8:decode("[Checker]: У вас установлена самая свежая версия скрипта."), -1)
 					end
+				else
+					updatesavaliable = false
+					sampAddChatMessage(u8:decode("[Checker]: Что-то пошло не так, упс. Попробуйте позже."), -1)
 				end
 			end
 		end
 	end)
 end
-function goupdate()
-	downloadUrlToFile("https://raw.githubusercontent.com/Akionka/checker/master/checker.lua", thisScript().path, function(id3, status1, p13, p23)
+
+function update(url)
+	downloadUrlToFile(url, thisScript().path..'.upd', function(_, status1, _, _)
 		if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
-			sampAddChatMessage(u8:decode('[Admins]: Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...'), -1)
-			sampAddChatMessage(u8:decode('[Admins]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.'), -1)
-			sampAddChatMessage(u8:decode('[Admins]: Скорее всего прямо сейчас у вас сломался курсор. Введите {2980b9}/checker{FFFFFF}.'), -1)
-			sampAddChatMessage(u8:decode('[Admins]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka teleg.run/akionka{FFFFFF}.'), -1)
-			updateinprogess = false
+			sampAddChatMessage(u8:decode('[Checker]: Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...'), -1)
+			sampAddChatMessage(u8:decode('[Checker]: ... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.'), -1)
+			sampAddChatMessage(u8:decode('[Checker]: Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka teleg.run/akionka{FFFFFF}.'), -1)
 		end
 	end)
 end
+
 function join_argb(a, r, g, b)
    local argb = b
    argb = bit.bor(argb, bit.lshift(g, 8))
