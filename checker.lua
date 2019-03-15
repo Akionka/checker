@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.8')
-script_version_number(12)
+script_version('1.8.1')
+script_version_number(13)
 
 local sampev   = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -206,7 +206,7 @@ function checkupdates(json)
           os.remove(fpath)
           if updateversion > thisScript().version_num then
             updatesavaliable = true
-            sampAddChatMessage(u8:decode("[Checker]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..updateversion.."{FFFFFF}."), -1)
+            sampAddChatMessage(u8:decode("[Checker]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..info.version.."{FFFFFF}."), -1)
             return true
           else
             updatesavaliable = false
