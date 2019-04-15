@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.8.1')
-script_version_number(13)
+script_version('1.9')
+script_version_number(14)
 
 local sampev   = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -10,7 +10,7 @@ local imgui    = require 'imgui'
 local dlstatus = require 'moonloader'.download_status
 local updatesavaliable = false
 encoding.default = 'cp1251'
-u8 = encoding.UTF8
+local u8 = encoding.UTF8
 
 local admins        = {}
 local admins_online = {}
@@ -22,21 +22,23 @@ local ini = inicfg.load({
     posX         = 40,
     posY         = 460,
     color        = 0xFF0000,
-    font         = "Arial",
-    startmsg     = true
+    font         = 'Arial',
+    startmsg     = true,
+    sorttype     = 0,
+    hideonscreen = true
   },
   color = {
     r = 255,
     g = 255,
     b = 255,
   },
-}, "admins")
+}, 'admins')
 
-function sampev.onPlayerQuit(id, reason)
+function sampev.onPlayerQuit(id, _)
   for i, v in ipairs(admins_online) do
-    if v["id"] == id then
+    if v['id'] == id then
       if ini.settings.shownotif then
-        sampAddChatMessage(u8:decode("[Checker]: Администратор {2980b9}"..v["nick"].."{FFFFFF} покинул сервер."), -1)
+        sampAddChatMessage(u8:decode('[Checker]: Администратор {2980b9}'..v['nick']..'{FFFFFF} покинул сервер.'), -1)
       end
       table.remove(admins_online, i)
       break
@@ -44,13 +46,20 @@ function sampev.onPlayerQuit(id, reason)
   end
 end
 
-function sampev.onPlayerJoin(id, clist, isNPC, nick)
+function sampev.onPlayerJoin(id, _, _, nick)
   for i, v in ipairs(admins) do
     if nick == v then
-      table.insert(admins_online, {nick = nick, id = id})
       if ini.settings.shownotif then
-        sampAddChatMessage(u8:decode("[Checker]: Администратор {2980b9}"..nick.."{FFFFFF} зашел на сервер."), -1)
+        sampAddChatMessage(u8:decode('[Checker]: Администратор {2980b9}'..nick..'{FFFFFF} зашел на сервер.'), -1)
       end
+      table.insert(admins_online, {nick = nick, id = id})
+      if ini.settings.sorttype == 0 then break end
+      table.sort(admins_online, function(a, b)
+        if ini.settings.sorttype == 1 then return a['id'] > b['id'] end
+        if ini.settings.sorttype == 2 then return a['id'] < b['id'] end
+        if ini.settings.sorttype == 3 then return a['nick'] > b['nick'] end
+        if ini.settings.sorttype == 4 then return a['nick'] < b['nick'] end
+      end)
       break
     end
   end
@@ -58,10 +67,12 @@ end
 
 local main_window_state = imgui.ImBool(false)
 local onscreen          = imgui.ImBool(ini.settings.showonscreen)
+local hideonscreen      = imgui.ImBool(ini.settings.hideonscreen)
 local startmsg          = imgui.ImBool(ini.settings.startmsg)
 local shownotif         = imgui.ImBool(ini.settings.shownotif)
-local posX              = imgui.ImInt(0)
-local posY              = imgui.ImInt(0)
+local sorttype          = imgui.ImInt(ini.settings.sorttype)
+local posX              = imgui.ImInt(ini.settings.posX)
+local posY              = imgui.ImInt(ini.settings.posY)
 local pos               = imgui.ImVec2(0, 0)
 local fontA             = imgui.ImBuffer(ini.settings.font, 256)
 
@@ -69,40 +80,57 @@ local r, g, b = imgui.ImColor(ini.color.r, ini.color.g, ini.color.b):GetFloat4()
 local color = imgui.ImFloat3(r, g, b)
 function imgui.OnDrawFrame()
   if main_window_state.v then
-    imgui.Begin(thisScript().name.." v"..thisScript().version, main_window_state, imgui.WindowFlags.AlwaysAutoResize)
-    posX.v = ini.settings.posX
-    posY.v = ini.settings.posY
-    if imgui.InputInt("X", posX) then
+    imgui.Begin(thisScript().name..' v'..thisScript().version, main_window_state, imgui.WindowFlags.AlwaysAutoResize)
+    if imgui.InputInt('X', posX) then
       ini.settings.posX = posX.v
-      inicfg.save(ini, "admins")
+      inicfg.save(ini, 'admins')
     end
-    if imgui.InputInt("Y", posY) then
+    if imgui.InputInt('Y', posY) then
       ini.settings.posY = posY.v
-      inicfg.save(ini, "admins")
+      inicfg.save(ini, 'admins')
     end
-    if imgui.InputText("Шрифт", fontA) then
+    if imgui.InputText('Шрифт', fontA) then
       ini.settings.font = fontA.v
       font = renderCreateFont(ini.settings.font, 9, 5)
-      inicfg.save(ini, "admins")
+      inicfg.save(ini, 'admins')
     end
     if imgui.ColorEdit3('Цвет текста', color) then
       ini.color = {r = color.v[1] * 255, g = color.v[2] * 255, b = color.v[3] * 255, }
       ini.settings.color = join_argb(255, color.v[1] * 255, color.v[2] * 255, color.v[3] * 255)
-      inicfg.save(ini, "admins")
+      inicfg.save(ini, 'admins')
     end
-    if imgui.Checkbox("Рендер на экране", onscreen) then
+    if imgui.CollapsingHeader('Способ сортировки') then
+      if imgui.ListBox('', sorttype, {'Никак', 'По увеличению ID', 'По уменьшению ID', 'По алфавиту', 'По алфавиту наоборот'}, imgui.ImInt(5)) then
+        ini.settings.sorttype = sorttype.v
+        if sorttype.v ~= 0 then
+          table.sort(admins_online, function(a, b)
+            if sorttype.v == 1 then return a['id'] < b['id'] end
+            if sorttype.v == 2 then return a['id'] > b['id'] end
+            if sorttype.v == 3 then return a['nick'] < b['nick'] end
+            if sorttype.v == 4 then return a['nick'] > b['nick'] end
+          end)
+        end
+        inicfg.save(ini, 'admins')
+      end
+      imgui.Separator()
+    end
+    if imgui.Checkbox('Рендер на экране', onscreen) then
       ini.settings.showonscreen = onscreen.v
-      inicfg.save(ini, "admins")
+      inicfg.save(ini, 'admins')
     end
-    if imgui.Checkbox("Оповещения о входе/выходе администраторов", shownotif) then
+    if imgui.Checkbox('Прятать на скриншотах', hideonscreen) then
+      ini.settings.hideonscreen = hideonscreen.v
+      inicfg.save(ini, 'admins')
+    end
+    if imgui.Checkbox('Оповещения о входе/выходе администраторов', shownotif) then
       ini.settings.shownotif = shownotif.v
-      inicfg.save(ini, "admins")
+      inicfg.save(ini, 'admins')
     end
-    if imgui.Checkbox("Стартовое сообщение", startmsg) then
+    if imgui.Checkbox('Стартовое сообщение', startmsg) then
       ini.settings.startmsg = startmsg.v
-      inicfg.save(ini, "admins")
+      inicfg.save(ini, 'admins')
     end
-    if imgui.Button("Перезагрузить админов") then
+    if imgui.Button('Перезагрузить админов') then
         rebuildadmins()
     end
     if updatesavaliable then
@@ -122,41 +150,39 @@ end
 function main()
   if not isSampfuncsLoaded() or not isSampLoaded() then return end
   while not isSampAvailable() do wait(0) end
-
+  
   checkupdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json')
   rebuildadmins()
 
   if ini.settings.startmsg then
-    sampAddChatMessage(u8:decode("[Checker]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}"..thisScript().version.."{FFFFFF}."), -1)
-    sampAddChatMessage(u8:decode("[Checker]: Автор - {2980b9}Akionka{FFFFFF}. Выключить данное сообщение можно в {2980b9}/checker{FFFFFF}."), -1)
-    sampAddChatMessage(u8:decode("[Checker]: Кстати, чтобы посмотреть список администраторов он-лайн введи {2980b9}/admins{FFFFFF}."), -1)
+    sampAddChatMessage(u8:decode('[Checker]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}'..thisScript().version..'{FFFFFF}.'), -1)
+    sampAddChatMessage(u8:decode('[Checker]: Автор - {2980b9}Akionka{FFFFFF}. Выключить данное сообщение можно в {2980b9}/checker{FFFFFF}.'), -1)
+    sampAddChatMessage(u8:decode('[Checker]: Кстати, чтобы посмотреть список администраторов он-лайн введи {2980b9}/admins{FFFFFF}.'), -1)
   end
 
-  sampRegisterChatCommand("admins", function()
-    if #admins_online == 0 then sampAddChatMessage(u8:decode("[Checker]: Администраторов он-лайн нет."), -1) return true end
-    sampAddChatMessage(u8:decode("[Checker]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов):"), -1)
+  sampRegisterChatCommand('admins', function()
+    if #admins_online == 0 then sampAddChatMessage(u8:decode('[Checker]: Администраторов он-лайн нет.'), -1) return true end
+    sampAddChatMessage(u8:decode('[Checker]: В данный момент на сервере находится {2980b9}'..#admins_online..'{FFFFFF} администратор (-а, -ов):'), -1)
     for i, v in ipairs(admins_online) do
-      sampAddChatMessage(u8:decode("[Checker]: {2980b9}"..v["nick"].." ["..v["id"].."]{FFFFFF}."), -1)
+      sampAddChatMessage(u8:decode('[Checker]: {2980b9}'..v['nick']..' ['..v['id']..']{FFFFFF}.'), -1)
     end
-    sampAddChatMessage(u8:decode("[Checker]: В данный момент на сервере находится {2980b9}"..#admins_online.."{FFFFFF} администратор (-а, -ов)."), -1)
+    sampAddChatMessage(u8:decode('[Checker]: В данный момент на сервере находится {2980b9}'..#admins_online..'{FFFFFF} администратор (-а, -ов).'), -1)
   end)
 
-  sampRegisterChatCommand("checker", function()
+  sampRegisterChatCommand('checker', function()
     imgui.SetNextWindowPos(imgui.ImVec2(200, 500), imgui.Cond.Always)
     main_window_state.v = not main_window_state.v
   end)
 
   font = renderCreateFont(ini.settings.font, 9, 5)
-
   while true do
     wait(0)
-    if isGoUpdate then goupdate() break end
-    if ini.settings.showonscreen then
+    if ini.settings.showonscreen and (not isKeyDown(0x77) or not ini.settings.hideonscreen)  then
       local renderPosY = ini.settings.posY
-      renderFontDrawText(font, "Admins Online ["..#admins_online.."]:", ini.settings.posX, ini.settings.posY, bit.bor(ini.settings.color, 0xFF000000))
+      renderFontDrawText(font, 'Admins Online ['..#admins_online..']:', ini.settings.posX, ini.settings.posY, bit.bor(ini.settings.color, 0xFF000000))
       renderPosY = renderPosY + 30
       for _, v in ipairs(admins_online) do
-        renderFontDrawText(font, v["nick"].." ["..v["id"].."]", ini.settings.posX, renderPosY, bit.bor(ini.settings.color, 0xFF000000))
+        renderFontDrawText(font, v['nick']..' ['..v['id']..']', ini.settings.posX, renderPosY, bit.bor(ini.settings.color, 0xFF000000))
         renderPosY = renderPosY + 15
       end
     end
@@ -166,14 +192,15 @@ end
 
 function loadadmins()
   admins = {}
-  if doesFileExist("moonloader/config/adminlist.txt") then
-    for admin in io.lines("moonloader/config/adminlist.txt") do
-      table.insert(admins, admin:match("(%S+)"))
+  if doesFileExist('moonloader/config/adminlist.txt') then
+    for admin in io.lines('moonloader/config/adminlist.txt') do
+      table.insert(admins, admin:match('(%S+)'))
     end
     print(u8:decode('Загрузка закончена. Загружено: '..#admins..' админов.'))
+    io.open('moonloader/config/adminlist.txt', 'w'):write(table.concat(admins, '\n')):close()
   else
     print(u8:decode('Файла с админами в директории <moonloader/config/adminlist.txt> не обнаружено, создан автоматически'))
-    io.close(io.open("moonloader/config/adminlist.txt", "w"))
+    io.close(io.open('moonloader/config/adminlist.txt', 'w'))
   end
 end
 
@@ -189,7 +216,15 @@ function rebuildadmins()
       end
     end
   end
-  sampAddChatMessage(u8:decode("[Checker]: Список админов онлайн перезагружен."), -1)
+  if sorttype.v ~= 0 then
+    table.sort(admins_online, function(a, b)
+      if sorttype.v == 1 then return a['id'] < b['id'] end
+      if sorttype.v == 2 then return a['id'] > b['id'] end
+      if sorttype.v == 3 then return a['nick'] < b['nick'] end
+      if sorttype.v == 4 then return a['nick'] > b['nick'] end
+    end)
+  end
+  sampAddChatMessage(u8:decode('[Checker]: Список админов онлайн перезагружен.'), -1)
 end
 
 function checkupdates(json)
@@ -206,15 +241,15 @@ function checkupdates(json)
           os.remove(fpath)
           if updateversion > thisScript().version_num then
             updatesavaliable = true
-            sampAddChatMessage(u8:decode("[Checker]: Найдено объявление. Текущая версия: {2980b9}"..thisScript().version.."{FFFFFF}, новая версия: {2980b9}"..info.version.."{FFFFFF}."), -1)
+            sampAddChatMessage(u8:decode('[Checker]: Найдено объявление. Текущая версия: {2980b9}'..thisScript().version..'{FFFFFF}, новая версия: {2980b9}'..info.version..'{FFFFFF}.'), -1)
             return true
           else
             updatesavaliable = false
-            sampAddChatMessage(u8:decode("[Checker]: У вас установлена самая свежая версия скрипта."), -1)
+            sampAddChatMessage(u8:decode('[Checker]: У вас установлена самая свежая версия скрипта.'), -1)
           end
         else
           updatesavaliable = false
-          sampAddChatMessage(u8:decode("[Checker]: Что-то пошло не так, упс. Попробуйте позже."), -1)
+          sampAddChatMessage(u8:decode('[Checker]: Что-то пошло не так, упс. Попробуйте позже.'), -1)
         end
       end
     end
