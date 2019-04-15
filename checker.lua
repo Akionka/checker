@@ -1,19 +1,20 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.9')
-script_version_number(14)
+script_version('1.9.1')
+script_version_number(15)
 
-local sampev   = require 'lib.samp.events'
-local encoding = require 'encoding'
-local inicfg   = require 'inicfg'
-local imgui    = require 'imgui'
-local dlstatus = require 'moonloader'.download_status
+local sampev           = require 'lib.samp.events'
+local encoding         = require 'encoding'
+local inicfg           = require 'inicfg'
+local imgui            = require 'imgui'
+local dlstatus         = require 'moonloader'.download_status
 local updatesavaliable = false
-encoding.default = 'cp1251'
-local u8 = encoding.UTF8
-
-local admins        = {}
-local admins_online = {}
+encoding.default       = 'cp1251'
+local u8               = encoding.UTF8
+local prefix           = 'Checker'
+local doRemove         = false
+local admins           = {}
+local admins_online    = {}
 
 local ini = inicfg.load({
   settings = {
@@ -71,10 +72,16 @@ local hideonscreen      = imgui.ImBool(ini.settings.hideonscreen)
 local startmsg          = imgui.ImBool(ini.settings.startmsg)
 local shownotif         = imgui.ImBool(ini.settings.shownotif)
 local sorttype          = imgui.ImInt(ini.settings.sorttype)
+local tempX             = ini.settings.posX
+local tempY             = ini.settings.posY
 local posX              = imgui.ImInt(ini.settings.posX)
 local posY              = imgui.ImInt(ini.settings.posY)
 local pos               = imgui.ImVec2(0, 0)
 local fontA             = imgui.ImBuffer(ini.settings.font, 256)
+
+function alert(text)
+  sampAddChatMessage(u8:decode('['..prefix..']: '..text), -1)
+end
 
 local r, g, b = imgui.ImColor(ini.color.r, ini.color.g, ini.color.b):GetFloat4()
 local color = imgui.ImFloat3(r, g, b)
@@ -88,6 +95,11 @@ function imgui.OnDrawFrame()
     if imgui.InputInt('Y', posY) then
       ini.settings.posY = posY.v
       inicfg.save(ini, 'admins')
+    end
+    if imgui.Button('Указать мышкой где должен быть список') then
+      alert('Нажмите {2980b9}ЛКМ{FFFFFF}, чтобы завершить. Нажмите {2980b9}ПКМ{FFFFFF}, чтобы отменить.')
+      main_window_state.v = false
+      doRemove = true
     end
     if imgui.InputText('Шрифт', fontA) then
       ini.settings.font = fontA.v
@@ -150,7 +162,7 @@ end
 function main()
   if not isSampfuncsLoaded() or not isSampLoaded() then return end
   while not isSampAvailable() do wait(0) end
-  
+
   checkupdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json')
   rebuildadmins()
 
@@ -177,7 +189,33 @@ function main()
   font = renderCreateFont(ini.settings.font, 9, 5)
   while true do
     wait(0)
-    if ini.settings.showonscreen and (not isKeyDown(0x77) or not ini.settings.hideonscreen)  then
+    if doRemove then
+      showCursor(true, true)
+      renderposX, renderposY = getCursorPos()
+      renderFontDrawText(font, 'Admins Online ['..#admins_online..']:', renderposX, renderposY, bit.bor(ini.settings.color, 0xFF000000))
+      renderposY = renderposY + 30
+      for _, v in ipairs(admins_online) do
+        renderFontDrawText(font, v['nick']..' ['..v['id']..']', renderposX, renderposY, bit.bor(ini.settings.color, 0xFF000000))
+        renderposY = renderposY + 15
+      end
+      if isKeyJustPressed(0x02) then
+        main_window_state.v = true
+        showCursor(false, false)
+        doRemove = false
+        alert('Отменено.')
+      end
+      if isKeyJustPressed(0x01) then
+        posX.v, posY.v = getCursorPos()
+        main_window_state.v = true
+        showCursor(false, false)
+        doRemove = false
+        alert('Новые координаты установлены.')
+        ini.settings.posX = posX.v
+        ini.settings.posY = posY.v
+        inicfg.save(ini, 'admins')
+      end
+    end
+    if not doRemove and ini.settings.showonscreen and (not isKeyDown(0x77) or not ini.settings.hideonscreen)  then
       local renderPosY = ini.settings.posY
       renderFontDrawText(font, 'Admins Online ['..#admins_online..']:', ini.settings.posX, ini.settings.posY, bit.bor(ini.settings.color, 0xFF000000))
       renderPosY = renderPosY + 30
