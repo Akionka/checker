@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
-script_version('1.9.1')
-script_version_number(15)
+script_version('1.9.2')
+script_version_number(16)
 
 local sampev           = require 'lib.samp.events'
 local encoding         = require 'encoding'
@@ -39,7 +39,7 @@ function sampev.onPlayerQuit(id, _)
   for i, v in ipairs(admins_online) do
     if v['id'] == id then
       if ini.settings.shownotif then
-        sampAddChatMessage(u8:decode('[Checker]: Администратор {2980b9}'..v['nick']..'{FFFFFF} покинул сервер.'), -1)
+        sampAddChatMessage(u8:decode('[Checker]: Администратор {9932cc}'..v['nick']..'{FFFFFF} покинул сервер.'), -1)
       end
       table.remove(admins_online, i)
       break
@@ -51,7 +51,7 @@ function sampev.onPlayerJoin(id, _, _, nick)
   for i, v in ipairs(admins) do
     if nick == v then
       if ini.settings.shownotif then
-        sampAddChatMessage(u8:decode('[Checker]: Администратор {2980b9}'..nick..'{FFFFFF} зашел на сервер.'), -1)
+        sampAddChatMessage(u8:decode('[Checker]: Администратор {9932cc}'..nick..'{FFFFFF} зашел на сервер.'), -1)
       end
       table.insert(admins_online, {nick = nick, id = id})
       if ini.settings.sorttype == 0 then break end
@@ -97,7 +97,7 @@ function imgui.OnDrawFrame()
       inicfg.save(ini, 'admins')
     end
     if imgui.Button('Указать мышкой где должен быть список') then
-      alert('Нажмите {2980b9}ЛКМ{FFFFFF}, чтобы завершить. Нажмите {2980b9}ПКМ{FFFFFF}, чтобы отменить.')
+      alert('Нажмите {9932cc}ЛКМ{FFFFFF}, чтобы завершить. Нажмите {9932cc}ПКМ{FFFFFF}, чтобы отменить.')
       main_window_state.v = false
       doRemove = true
     end
@@ -159,26 +159,78 @@ function imgui.OnDrawFrame()
   end
 end
 
+function apply_custom_style()
+    imgui.SwitchContext()
+    local style = imgui.GetStyle()
+    local colors = style.Colors
+    local clr = imgui.Col
+    local ImVec4 = imgui.ImVec4
+    style.WindowRounding = 0.0
+    style.WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
+    style.ChildWindowRounding = 0.0
+    style.FrameRounding = 0.0
+    style.ItemSpacing = imgui.ImVec2(5.0, 5.0)
+    style.ScrollbarSize = 13.0
+    style.ScrollbarRounding = 0
+    style.GrabMinSize = 8.0
+    style.GrabRounding = 0.0
+
+    colors[clr.FrameBg]                = ImVec4(0.20, 0.20, 0.20, 1.00)
+    colors[clr.FrameBgHovered]         = ImVec4(0.20, 0.20, 0.20, 1.00)
+    colors[clr.FrameBgActive]          = ImVec4(0.20, 0.20, 0.20, 1.00)
+    colors[clr.TitleBg]                = ImVec4(0.15, 0.68, 0.38, 1.00) -- Название окна
+    colors[clr.TitleBgActive]          = ImVec4(0.15, 0.68, 0.38, 1.00) -- Название окна
+    colors[clr.TitleBgCollapsed]       = ImVec4(0.15, 0.68, 0.38, 1.00) -- Название окна
+    colors[clr.CheckMark]              = ImVec4(0.15, 0.68, 0.38, 1.00)
+    -- colors[clr.SliderGrab]             = ImVec4(0.88, 0.26, 0.24, 1.00)
+    -- colors[clr.SliderGrabActive]       = ImVec4(0.98, 0.26, 0.26, 1.00)
+    colors[clr.Button]                 = ImVec4(0.15, 0.68, 0.38, 0.40) -- Кнопка
+    colors[clr.ButtonHovered]          = ImVec4(0.15, 0.68, 0.38, 1.00) -- Кнопка
+    colors[clr.ButtonActive]           = ImVec4(0.15, 0.68, 0.38, 1.00) -- Кнопка
+		colors[clr.Header]                 = ImVec4(0.15, 0.68, 0.38, 0.31)
+    colors[clr.HeaderHovered]          = ImVec4(0.15, 0.68, 0.38, 0.80)
+		colors[clr.HeaderActive]           = ImVec4(0.15, 0.68, 0.38, 1.00)
+    colors[clr.Separator]              = colors[clr.Border]
+    colors[clr.SeparatorHovered]       = ImVec4(0.75, 0.10, 0.10, 0.78)
+    colors[clr.SeparatorActive]        = ImVec4(0.75, 0.10, 0.10, 1.00)
+    colors[clr.ResizeGrip]             = ImVec4(0.15, 0.68, 0.38, 1.00)
+    colors[clr.ResizeGripHovered]      = ImVec4(0.15, 0.68, 0.38, 1.00)
+    colors[clr.ResizeGripActive]       = ImVec4(0.15, 0.68, 0.38, 0.95)
+    colors[clr.TextSelectedBg]         = ImVec4(0.98, 0.26, 0.26, 0.35)
+    colors[clr.Text]                   = ImVec4(1.00, 1.00, 1.00, 1.00)
+    colors[clr.TextDisabled]           = ImVec4(0.50, 0.50, 0.50, 1.00)
+    colors[clr.WindowBg]               = ImVec4(0.13, 0.13, 0.13, 1.00)
+    colors[clr.ChildWindowBg]          = ImVec4(0.13, 0.13, 0.13, 1.00)
+    colors[clr.PopupBg]                = ImVec4(0.13, 0.13, 0.13, 1.00)
+    colors[clr.ComboBg]                = colors[clr.PopupBg]
+    colors[clr.Border]                 = ImVec4(0.43, 0.43, 0.50, 0.50)
+    colors[clr.BorderShadow]           = ImVec4(0.00, 0.00, 0.00, 0.00)
+    colors[clr.CloseButton]            = ImVec4(0.15, 0.68, 0.38, 1.00)
+    colors[clr.CloseButtonHovered]     = ImVec4(0.15, 0.68, 0.38, 1.00)
+    colors[clr.CloseButtonActive]      = ImVec4(0.15, 0.68, 0.38, 1.00)
+end
+
 function main()
   if not isSampfuncsLoaded() or not isSampLoaded() then return end
   while not isSampAvailable() do wait(0) end
 
   checkupdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json')
   rebuildadmins()
+	apply_custom_style()
 
   if ini.settings.startmsg then
-    sampAddChatMessage(u8:decode('[Checker]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {2980b9}'..thisScript().version..'{FFFFFF}.'), -1)
-    sampAddChatMessage(u8:decode('[Checker]: Автор - {2980b9}Akionka{FFFFFF}. Выключить данное сообщение можно в {2980b9}/checker{FFFFFF}.'), -1)
-    sampAddChatMessage(u8:decode('[Checker]: Кстати, чтобы посмотреть список администраторов он-лайн введи {2980b9}/admins{FFFFFF}.'), -1)
+    sampAddChatMessage(u8:decode('[Checker]: Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {9932cc}'..thisScript().version..'{FFFFFF}.'), -1)
+    sampAddChatMessage(u8:decode('[Checker]: Автор - {9932cc}Akionka{FFFFFF}. Выключить данное сообщение можно в {9932cc}/checker{FFFFFF}.'), -1)
+    sampAddChatMessage(u8:decode('[Checker]: Кстати, чтобы посмотреть список администраторов он-лайн введи {9932cc}/admins{FFFFFF}.'), -1)
   end
 
   sampRegisterChatCommand('admins', function()
     if #admins_online == 0 then sampAddChatMessage(u8:decode('[Checker]: Администраторов он-лайн нет.'), -1) return true end
-    sampAddChatMessage(u8:decode('[Checker]: В данный момент на сервере находится {2980b9}'..#admins_online..'{FFFFFF} администратор (-а, -ов):'), -1)
+    sampAddChatMessage(u8:decode('[Checker]: В данный момент на сервере находится {9932cc}'..#admins_online..'{FFFFFF} администратор (-а, -ов):'), -1)
     for i, v in ipairs(admins_online) do
-      sampAddChatMessage(u8:decode('[Checker]: {2980b9}'..v['nick']..' ['..v['id']..']{FFFFFF}.'), -1)
+      sampAddChatMessage(u8:decode('[Checker]: {9932cc}'..v['nick']..' ['..v['id']..']{FFFFFF}.'), -1)
     end
-    sampAddChatMessage(u8:decode('[Checker]: В данный момент на сервере находится {2980b9}'..#admins_online..'{FFFFFF} администратор (-а, -ов).'), -1)
+    sampAddChatMessage(u8:decode('[Checker]: В данный момент на сервере находится {9932cc}'..#admins_online..'{FFFFFF} администратор (-а, -ов).'), -1)
   end)
 
   sampRegisterChatCommand('checker', function()
@@ -188,6 +240,7 @@ function main()
 
   font = renderCreateFont(ini.settings.font, 9, 5)
   while true do
+    if sampGetChatString(99) == 'The server is restarting..' then admins_online = {} end
     wait(0)
     if doRemove then
       showCursor(true, true)
@@ -279,7 +332,7 @@ function checkupdates(json)
           os.remove(fpath)
           if updateversion > thisScript().version_num then
             updatesavaliable = true
-            sampAddChatMessage(u8:decode('[Checker]: Найдено объявление. Текущая версия: {2980b9}'..thisScript().version..'{FFFFFF}, новая версия: {2980b9}'..info.version..'{FFFFFF}.'), -1)
+            sampAddChatMessage(u8:decode('[Checker]: Найдено объявление. Текущая версия: {9932cc}'..thisScript().version..'{FFFFFF}, новая версия: {9932cc}'..info.version..'{FFFFFF}.'), -1)
             return true
           else
             updatesavaliable = false
