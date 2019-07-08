@@ -1,7 +1,7 @@
 script_name('Admin Checker')
 script_author('akionka')
 script_version('1.10.0')
-script_version_number(17)
+script_version_number(18)
 
 
 --[[
@@ -97,7 +97,7 @@ function sampev.onPlayerJoin(id, _, _, nick)
   end
 end
 
-local main_window_state = imgui.ImBool(true)
+local main_window_state = imgui.ImBool(false)
 local showonscreen      = imgui.ImBool(false)          -- Заглушка до загрузки данных из loadData()
 local hideonscreen      = imgui.ImBool(false)          -- Заглушка до загрузки данных из loadData()
 local startmsg          = imgui.ImBool(false)          -- Заглушка до загрузки данных из loadData()
