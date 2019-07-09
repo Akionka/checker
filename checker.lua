@@ -1,8 +1,7 @@
-script_name('Admin Checker')
+script_name('Checker')
 script_author('akionka')
-script_version('1.10.0')
-script_version_number(18)
-
+script_version('1.10.1')
+script_version_number(19)
 
 --[[
    _____   _         ____     _____   ______     _____   _______         _____    _        ______               _____   ______
@@ -14,364 +13,248 @@ script_version_number(18)
                                                                   |/
 ]]
 
-
 local sampev           = require 'lib.samp.events'
 local encoding         = require 'encoding'
 local imgui            = require 'imgui'
 local dlstatus         = require 'moonloader'.download_status
-local updatesavaliable = false
-
+local updatesAvaliable = false
 encoding.default       = 'cp1251'
 local u8               = encoding.UTF8
 local prefix           = 'Checker'
-local doRemove         = false
-local admins           = {}
-local admins_online    = {}
+local loadedUsers    = {}
+local onlineUsers    = {}
 local data             = {
-  settings = {
-    shownotif    = true,
-    showonscreen = true,
-    posX         = 40,
-    posY         = 460,
-    startmsg     = true,
-    sorttype     = 0,
-    hideonscreen = true,
-    headerText   = 'Admins Online'
+  settings  = {
+    alwaysAutoCheckUpdates          = true,
+    notificationsAboutJoinsAndQuits = true,
+    renderOnScreen                  = true,
+    hideOnScreenshot                = false,
+    hideOnOpenChat                  = false,
+    headerFontName                  = 'Arial',
+    headerFontSize                  = 9,
+    headerFontColor                 = 0xFFFFFFFF,
   },
-  colors = {
-    header = {
-      r = 255,
-      g = 255,
-      b = 255,
-    },
-    list = {
-      r = 255,
-      g = 255,
-      b = 255,
-    },
-  },
-  fonts = {
-    header = {
-      name = 'Arial',
-      size = 9,
-    },
-    list = {
-      name = 'Arial',
-      size = 9,
-    },
-  },
-  list = {
+  lists     = {
     {
       isbuiltin = true,
       title = 'Common',
-      admins = {},
+      ip    = '127.0.0.1',
+      port  = 7777,
+      color = {
+        r = 255,
+        g = 255,
+        b = 255,
+      },
+      users = {'West_Side', 'Drop_Table'}
     },
   },
 }
+tempBuffers = {}
 
-local temp_buffers = {}
+function applyCustomStyle()imgui.SwitchContext()local a=imgui.GetStyle()local b=a.Colors;local c=imgui.Col;local d=imgui.ImVec4;a.WindowRounding=0.0;a.WindowTitleAlign=imgui.ImVec2(0.5,0.5)a.ChildWindowRounding=0.0;a.FrameRounding=0.0;a.ItemSpacing=imgui.ImVec2(5.0,5.0)a.ScrollbarSize=13.0;a.ScrollbarRounding=0;a.GrabMinSize=8.0;a.GrabRounding=0.0;b[c.TitleBg]=d(0.60,0.20,0.80,1.00)b[c.TitleBgActive]=d(0.60,0.20,0.80,1.00)b[c.TitleBgCollapsed]=d(0.60,0.20,0.80,1.00)b[c.CheckMark]=d(0.60,0.20,0.80,1.00)b[c.Button]=d(0.60,0.20,0.80,0.31)b[c.ButtonHovered]=d(0.60,0.20,0.80,0.80)b[c.ButtonActive]=d(0.60,0.20,0.80,1.00)b[c.WindowBg]=d(0.13,0.13,0.13,1.00)b[c.Header]=d(0.60,0.20,0.80,0.31)b[c.HeaderHovered]=d(0.60,0.20,0.80,0.80)b[c.HeaderActive]=d(0.60,0.20,0.80,1.00)b[c.FrameBg]=d(0.60,0.20,0.80,0.31)b[c.FrameBgHovered]=d(0.60,0.20,0.80,0.80)b[c.FrameBgActive]=d(0.60,0.20,0.80,1.00)b[c.ScrollbarBg]=d(0.60,0.20,0.80,0.31)b[c.ScrollbarGrab]=d(0.60,0.20,0.80,0.31)b[c.ScrollbarGrabHovered]=d(0.60,0.20,0.80,0.80)b[c.ScrollbarGrabActive]=d(0.60,0.20,0.80,1.00)b[c.Text]=d(1.00,1.00,1.00,1.00)b[c.Border]=d(0.60,0.20,0.80,0.00)b[c.BorderShadow]=d(0.00,0.00,0.00,0.00)b[c.CloseButton]=d(0.60,0.20,0.80,0.31)b[c.CloseButtonHovered]=d(0.60,0.20,0.80,0.80)b[c.CloseButtonActive]=d(0.60,0.20,0.80,1.00)end
 
-function sampev.onPlayerQuit(id, _)
-  for i, v in ipairs(admins_online) do
+
+function sampev.onSendClientJoin(version, mod, nickname, challengeResponse, joinAuthKey, clientVer, unknown)
+  --[[
+    Обнуление онлайн пользователей, загруженных пользователей после (ре)коннекта.
+    Также, загрузка новых пользователей, если, допустим, пользователь скрипта
+    переподключился к новому серверу.
+  ]]
+
+  loadUsers()
+end
+
+
+function sampev.onPlayerJoin(id, color, isNPC, nickname)
+  --[[
+    Добавление нового пользователя в список онлайн, когда тот подключается.
+    Также вызывается много-много раз когда сам пользователь подключается к серверу.
+  ]]
+
+  for i, v in ipairs(loadedUsers) do
+    if v == nickname then
+      table.insert(onlineUsers, {nickname = nickname, id = id})
+      break
+    end
+  end
+end
+
+
+function sampev.onPlayerQuit(id, reason)
+  --[[
+    Исключение из списка онлайн пользователей покинувшего сервер пользователя.
+  ]]
+
+  for i, v in ipairs(onlineUsers) do
     if v['id'] == id then
-      if shownotif.v then
-        alert('Администратор {9932cc}'..v['nick']..'{FFFFFF} покинул сервер.')
-      end
-      table.remove(admins_online, i)
+      table.remove(onlineUsers, i)
       break
     end
   end
 end
 
-function sampev.onPlayerJoin(id, _, _, nick)
-  for i, v in ipairs(admins) do
-    if nick == v then
-      if shownotif.v then
-        alert('Администратор {9932cc}'..nick..'{FFFFFF} зашел на сервер.')
-      end
-      table.insert(admins_online, {nick = nick, id = id})
-      if ini.settings.sorttype == 0 then break end
-      sortAdmins()
-      break
-    end
-  end
-end
 
-local main_window_state = imgui.ImBool(false)
-local showonscreen      = imgui.ImBool(false)          -- Заглушка до загрузки данных из loadData()
-local hideonscreen      = imgui.ImBool(false)          -- Заглушка до загрузки данных из loadData()
-local startmsg          = imgui.ImBool(false)          -- Заглушка до загрузки данных из loadData()
-local shownotif         = imgui.ImBool(false)          -- Заглушка до загрузки данных из loadData()
-local sorttype          = imgui.ImInt(0)               -- Заглушка до загрузки данных из loadData()
-local posX              = imgui.ImInt(0)               -- Заглушка до загрузки данных из loadData()
-local posY              = imgui.ImInt(0)               -- Заглушка до загрузки данных из loadData()
-local fontBufferHeader  = imgui.ImBuffer('Arial', 256) -- Заглушка до загрузки данных из loadData()
-local fontSizeHeader    = imgui.ImInt(0)               -- Заглушка до загрузки данных из loadData()
-local fontHeader        = renderCreateFont(fontBufferHeader.v, fontSizeHeader.v, 5)
-local fontBufferList    = imgui.ImBuffer('Arial', 256) -- Заглушка до загрузки данных из loadData()
-local fontSizeList      = imgui.ImInt(0)               -- Заглушка до загрузки данных из loadData()
-local fontList          = renderCreateFont(fontBufferList.v, fontSizeList.v, 5)
-local headerText        = imgui.ImBuffer('', 1)       -- Заглушка до загрузки данных из loadData()
-local selected          = 1
-local adminsText        = imgui.ImBuffer('', 0xFFFF)
+local mainWindowState       = imgui.ImBool(true)
+local headerFontNameBuffer  = imgui.ImBuffer('Arial', 256)
+local headerFontSizeBuffer  = imgui.ImInt(9)
+local headerFontColorBuffer = imgui.ImFloat3(0, 0, 0)
+local headerFont            = renderCreateFont('Arial', 9, 5)
 
-function alert(text)
-  sampAddChatMessage(u8:decode('['..prefix..']: '..text), -1)
-end
 
-local r1, g1, b1 = imgui.ImColor(0, 0, 0):GetFloat4()       -- Заглушка до загрузки данных из loadData()
-local color1     = imgui.ImFloat3(r1, g1, b1)               -- Заглушка до загрузки данных из loadData()
-local r2, g2, b2 = imgui.ImColor(0, 0, 0):GetFloat4()       -- Заглушка до загрузки данных из loadData()
-local color2     = imgui.ImFloat3(r2, g2, b2)               -- Заглушка до загрузки данных из loadData()
+local selected_tab = 2
+
+
 function imgui.OnDrawFrame()
-  if main_window_state.v then
-    imgui.Begin(thisScript().name..' v'..thisScript().version, main_window_state, imgui.WindowFlags.AlwaysAutoResize)
-    if imgui.InputInt('X', posX) then saveData() end
-    if imgui.InputInt('Y', posY) then saveData() end
-    if imgui.Button('Указать мышкой где должен быть список') then
-      alert('Нажмите {9932cc}ЛКМ{FFFFFF}, чтобы завершить. Нажмите {9932cc}ПКМ{FFFFFF}, чтобы отменить.')
-      main_window_state.v = false
-      doRemove = true
-    end
-    if imgui.InputText('Текст шапки', headerText) then saveData() end
-    if imgui.InputText('Шрифт шапки', fontBufferHeader) then generateFont() saveData() end
-    if imgui.InputInt('Размер шрифта шапки', fontSizeHeader, 1, 4) then generateFont() saveData() end
-    if imgui.ColorEdit3('Цвет шапки', color1) then saveData() end
-    if imgui.InputText('Шрифт списка', fontBufferList) then generateFont() saveData() end
-    if imgui.InputInt('Размер шрифта списка', fontSizeList, 1, 4) then generateFont() saveData() end
-    if imgui.ColorEdit3('Цвет списка', color2) then saveData() end
-    if imgui.CollapsingHeader('Способ сортировки') then
-      if imgui.ListBox('', sorttype, {'Никак', 'По увеличению ID', 'По уменьшению ID', 'По алфавиту', 'По алфавиту наоборот'}, imgui.ImInt(5)) then
-        sortAdmins()
-        saveData()
-      end
-      imgui.Separator()
-    end
-    if imgui.Checkbox('Рендер на экране', showonscreen) then
-      saveData()
-    end
-    if imgui.Checkbox('Прятать на скриншотах', hideonscreen) then saveData()
-    end
-    if imgui.Checkbox('Оповещения о входе/выходе администраторов', shownotif) then saveData()
-    end
-    if imgui.Checkbox('Стартовое сообщение', startmsg) then saveData()
-    end
-    if imgui.Button('Открыть редактор списка администраторов') then
-        imgui.OpenPopup('Редактор списка администраторов')
-    end
-    if updatesavaliable then
-      if imgui.Button('Скачать обновление') then
-        update('https://raw.githubusercontent.com/Akionka/checker/master/checker.lua')
-        main_window_state.v = false
-      end
-    else
-      if imgui.Button('Проверить обновление') then
-        checkupdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json')
-      end
-    end
+  if mainWindowState.v then
     local resX, resY = getScreenResolution()
-    imgui.SetNextWindowSize(imgui.ImVec2(434.4, 324), imgui.Cond.Once)
-    imgui.SetNextWindowPos(imgui.ImVec2(resX / 2, resY / 2), imgui.Cond.Once, imgui.ImVec2(.5, .5))
-    if imgui.BeginPopupModal('Редактор списка администраторов', nil, imgui.WindowFlags.NoResize) then
+    imgui.SetNextWindowSize(imgui.ImVec2(576, 324), 2)
+    imgui.SetNextWindowPos(imgui.ImVec2(resX/2, resY/2), 2, imgui.ImVec2(0.5, 0.5))
+    imgui.Begin('Checker v'..thisScript()['version'], mainWindowState, imgui.WindowFlags.NoResize)
       imgui.BeginGroup()
-        imgui.BeginChild('Servers list', imgui.ImVec2(134.4, -(imgui.GetItemsLineHeightWithSpacing()*2 - imgui.GetStyle().ItemSpacing.y)), true)
-          for i, v in ipairs(data['list']) do
-            if imgui.Selectable(v['title']..'##server'..i, selected == i) then selected = i end
-          end
-        imgui.EndChild()
-        if imgui.Button('Добавить', imgui.ImVec2(67.2, 0)) then
-          local name = sampGetCurrentServerName()
-          local ip, port = sampGetCurrentServerAddress()
-          temp_buffers['servername'] = imgui.ImBuffer(name, 64)
-          temp_buffers['serverip']   = imgui.ImBuffer(ip, 16)
-          temp_buffers['serverport'] = imgui.ImInt(port)
-          imgui.OpenPopup('Добавить')
-        end
-        imgui.SameLine()
-        if imgui.Button('Удалить', imgui.ImVec2(67.2, 0)) and not data['list'][selected]['isbuiltin'] then imgui.OpenPopup('Удалить') end
-        if imgui.Button('Закрыть', imgui.ImVec2(134.4 + imgui.GetStyle().ItemSpacing.x, 0)) then imgui.CloseCurrentPopup() end
-        imgui.SetNextWindowSize(imgui.ImVec2(298, 136), imgui.Cond.Once)
-        imgui.SetNextWindowPos(imgui.ImVec2(resX / 2, resY / 2), imgui.Cond.Once, imgui.ImVec2(.5, .5))
-        if imgui.BeginPopupModal('Добавить', nil, imgui.WindowFlags.NoResize) then
-          imgui.InputText('Название', temp_buffers['servername'])
-          imgui.InputText('IP', temp_buffers['serverip'] )
-          imgui.InputInt('Port', temp_buffers['serverport'])
-          imgui.Separator()
-          imgui.SetCursorPosX((imgui.GetWindowWidth() - 240 + imgui.GetStyle().ItemSpacing.x) / 2)
-          if imgui.Button('OK', imgui.ImVec2(120, 0)) then
-            table.insert(data['list'], {
-              isbuiltin = false,
-              title = temp_buffers['servername'].v,
-              ip = temp_buffers['serverip'].v,
-              port = temp_buffers['serverport'].v,
-              admins = {}
-            })
-            saveData()
-            imgui.CloseCurrentPopup()
-          end
-          imgui.SameLine()
-          if imgui.Button('Отмена', imgui.ImVec2(120, 0)) then imgui.CloseCurrentPopup() end
-          imgui.EndPopup()
-        end
-        if imgui.BeginPopupModal('Удалить', nil, imgui.WindowFlags.NoResize) then
-          imgui.Text('Вы действительно хотите удалить этот список?\nУдаление приведет к полной безвозвратной потере списка администраторов для данного сервера.')
-          imgui.Separator()
-          imgui.SetCursorPosX((imgui.GetWindowWidth() - 240 + imgui.GetStyle().ItemSpacing.x) / 2)
-          if imgui.Button('OK', imgui.ImVec2(120, 0)) then
-            table.remove(data['list'], selected)
-            selected = 1
-            saveData()
-            imgui.CloseCurrentPopup()
-          end
-          imgui.SameLine()
-          if imgui.Button('Отмена', imgui.ImVec2(120, 0)) then imgui.CloseCurrentPopup() end
-          imgui.EndPopup()
-        end
-      imgui.EndGroup()
-      imgui.SameLine()
-      imgui.BeginGroup()
-        imgui.BeginChild('Admins list', imgui.ImVec2(150, 0), false)
-          print(imgui.GetWindowContentRegionWidth())
-          adminsText.v = table.concat(data['list'][selected]['admins'], "\n")
-          if imgui.InputTextMultiline('##list', adminsText, imgui.ImVec2(150, -imgui.GetStyle().ItemSpacing.x)) then
-            parseText(adminsText.v)
-            saveData()
-            sLoadAdmins()
-          end
+        imgui.BeginChild('Left panel', imgui.ImVec2(100, 0), true)
+          if imgui.Selectable('Списки', selected_tab == 1) then selected_tab = 1 end
+          if imgui.Selectable('Настройки', selected_tab == 2) then selected_tab = 2 end
+          if imgui.Selectable('Информация', selected_tab == 3) then selected_tab = 3 end
         imgui.EndChild()
       imgui.EndGroup()
-      imgui.SameLine()
-      imgui.BeginGroup()
-        imgui.BeginChild('Admins list##show', imgui.ImVec2(150, 0), false)
-          imgui.Text(table.concat(data['list'][selected]['admins'], "\n"))
-          print(table.concat(data['list'][selected]['admins'], "\n"))
-        imgui.EndChild()
-      imgui.EndGroup()
-      imgui.EndPopup()
-    end
 
+      imgui.SameLine()
+
+      imgui.BeginGroup()
+        imgui.BeginChild('Center panel')
+          if selected_tab == 1 then
+            --
+          end
+          if selected_tab == 2 then
+            if imgui.Checkbox('Всегда автоматически проверять обновления', imgui.ImBool(data['settings']['alwaysAutoCheckUpdates'])) then
+              data['settings']['alwaysAutoCheckUpdates'] = not data['settings']['alwaysAutoCheckUpdates']
+              saveData()
+            end
+            if imgui.Checkbox('Сообщения о входе/выходе отслеживаемых пользователей', imgui.ImBool(data['settings']['notificationsAboutJoinsAndQuits'])) then
+              data['settings']['notificationsAboutJoinsAndQuits'] = not data['settings']['notificationsAboutJoinsAndQuits']
+              saveData()
+            end
+            if imgui.Checkbox('Рендер на экране', imgui.ImBool(data['settings']['renderOnScreen'])) then
+              data['settings']['renderOnScreen'] = not data['settings']['renderOnScreen']
+              saveData()
+            end
+            if imgui.Checkbox('Прятать на скриншотах', imgui.ImBool(data['settings']['hideOnScreenshot'])) then
+              data['settings']['hideOnScreenshot'] = not data['settings']['hideOnScreenshot']
+              saveData()
+            end
+            if imgui.Checkbox('Прятать при открытии чата', imgui.ImBool(data['settings']['hideOnOpenChat']))then
+              data['settings']['hideOnOpenChat'] = not data['settings']['hideOnOpenChat']
+              saveData()
+            end
+            -- local output =  imgui.InputText(const char* label,char* buf,size_t buf_size,ImGuiInputTextFlags flags = 0,ImGuiTextEditCallback callback = NULL,void* user_data = NULL)
+            imgui.PushItemWidth(100)
+            if imgui.InputText('Название шрифта шапки', headerFontNameBuffer) then
+              data['settings']['headerFontName'] = headerFontNameBuffer.v
+              saveData()
+              rebuildFonts()
+            end
+            if imgui.InputInt('Размер шрифта шапки', headerFontSizeBuffer, 1, 3) then
+              data['settings']['headerFontSize'] = headerFontSizeBuffer.v
+              saveData()
+              rebuildFonts()
+            end
+            imgui.PopItemWidth()
+
+          end
+          if selected_tab == 3 then
+            imgui.Text('Название: Checker')
+            imgui.Text('Автор: Akionka')
+            imgui.Text('Версия: '..thisScript().version_num..' ('..thisScript().version..')')
+            imgui.Text('Команды: /checker, /users')
+            if updatesavaliable then
+              if imgui.Button('Скачать обновление', imgui.ImVec2(150, 0)) then
+                update('https://raw.githubusercontent.com/Akionka/checker/master/checker.lua')
+                mainWindowState.v = false
+              end
+            else
+              if imgui.Button('Проверить обновления', imgui.ImVec2(150, 0)) then
+                checkUpdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json')
+              end
+            end
+            if imgui.Button('Bug report [VK]', imgui.ImVec2(150, 0)) then os.execute('explorer "https://vk.com/akionka"') end
+            imgui.SameLine()
+            if imgui.Button('Bug report [Telegram]', imgui.ImVec2(150, 0)) then os.execute('explorer "https://teleg.run/akionka"') end
+          end
+        imgui.EndChild()
+      imgui.EndGroup()
+
+      imgui.SameLine()
+
+      imgui.BeginGroup()
+        imgui.BeginChild('Right panel')
+        imgui.EndChild()
+      imgui.EndGroup()
     imgui.End()
   end
 end
-
-function apply_custom_style()imgui.SwitchContext()local a=imgui.GetStyle()local b=a.Colors;local c=imgui.Col;local d=imgui.ImVec4;a.WindowRounding=0.0;a.WindowTitleAlign=imgui.ImVec2(0.5,0.5)a.ChildWindowRounding=0.0;a.FrameRounding=0.0;a.ItemSpacing=imgui.ImVec2(5.0,5.0)a.ScrollbarSize=13.0;a.ScrollbarRounding=0;a.GrabMinSize=8.0;a.GrabRounding=0.0;b[c.TitleBg]=d(0.60,0.20,0.80,1.00)b[c.TitleBgActive]=d(0.60,0.20,0.80,1.00)b[c.TitleBgCollapsed]=d(0.60,0.20,0.80,1.00)b[c.CheckMark]=d(0.60,0.20,0.80,1.00)b[c.Button]=d(0.60,0.20,0.80,0.31)b[c.ButtonHovered]=d(0.60,0.20,0.80,0.80)b[c.ButtonActive]=d(0.60,0.20,0.80,1.00)b[c.WindowBg]=d(0.13,0.13,0.13,1.00)b[c.Header]=d(0.60,0.20,0.80,0.31)b[c.HeaderHovered]=d(0.60,0.20,0.80,0.80)b[c.HeaderActive]=d(0.60,0.20,0.80,1.00)b[c.FrameBg]=d(0.60,0.20,0.80,0.31)b[c.FrameBgHovered]=d(0.60,0.20,0.80,0.80)b[c.FrameBgActive]=d(0.60,0.20,0.80,1.00)b[c.ScrollbarBg]=d(0.60,0.20,0.80,0.31)b[c.ScrollbarGrab]=d(0.60,0.20,0.80,0.31)b[c.ScrollbarGrabHovered]=d(0.60,0.20,0.80,0.80)b[c.ScrollbarGrabActive]=d(0.60,0.20,0.80,1.00)b[c.Text]=d(1.00,1.00,1.00,1.00)b[c.Border]=d(0.60,0.20,0.80,0.00)b[c.BorderShadow]=d(0.00,0.00,0.00,0.00)b[c.CloseButton]=d(0.60,0.20,0.80,0.31)b[c.CloseButtonHovered]=d(0.60,0.20,0.80,0.80)b[c.CloseButtonActive]=d(0.60,0.20,0.80,1.00)end
 
 
 function main()
   if not isSampfuncsLoaded() or not isSampLoaded() then return end
   while not isSampAvailable() do wait(0) end
-
   if not doesDirectoryExist(getWorkingDirectory()..'\\config') then createDirectory(getWorkingDirectory()..'\\config') end
-  checkupdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json')
+
+  applyCustomStyle()
   loadData()
-  apply_custom_style()
+  rebuildFonts()
+  loadUsers()
 
-  if data['startmsg'] then
-    alert('Скрипт {00FF00}успешно{FFFFFF} загружен. Версия: {9932cc}'..thisScript().version..'{FFFFFF}.')
-    alert('Автор - {9932cc}Akionka{FFFFFF}. Выключить данное сообщение можно в {9932cc}/checker{FFFFFF}.')
-    alert('Кстати, чтобы посмотреть список администраторов он-лайн введи {9932cc}/admins{FFFFFF}.')
-  end
-
-  sampRegisterChatCommand('admins', function()
-    if #admins_online == 0 then alert('Администраторов он-лайн нет.') return true end
-    alert('В данный момент на сервере находится {9932cc}'..#admins_online..'{FFFFFF} администратор (-а, -ов):')
-    for i, v in ipairs(admins_online) do
-      alert('{9932cc}'..v['nick']..' ['..v['id']..']{FFFFFF}.')
-    end
-    alert('В данный момент на сервере находится {9932cc}'..#admins_online..'{FFFFFF} администратор (-а, -ов).')
-  end)
+  print(u8:decode('{FFFFFF}Скрипт успешно загружен.'))
+  print(u8:decode('{FFFFFF}Версия: {9932cc}'..thisScript()['version']..'{FFFFFF}. Автор: {9932cc}Akionka{FFFFFF}.'))
+  print(u8:decode('{FFFFFF}Приятного использования! :)'))
 
   sampRegisterChatCommand('checker', function()
-    imgui.SetNextWindowPos(imgui.ImVec2(200, 500), imgui.Cond.Always)
-    main_window_state.v = not main_window_state.v
+    mainWindowState.v = not mainWindowState.v
+  end)
+
+  sampRegisterChatCommand('users', function()
+    if #onlineUsers == 0 then return alert('В данный момент никто не подключен к серверу из тех пользователей, кто есть у вас в списках.') end
+
+    alert('В данный момент на сервере находится {9932cc}'..#onlineUsers..' {FFFFFF}пользователь(-я, -ей) из ваших списков:')
+
+    for i, v in ipairs(onlineUsers) do
+      alert(v['nickname']..'['..v['id']..']')
+    end
+
+    if #onlineUsers > 10 then alert('В данный момент на сервере находится {9932cc}'..#onlineUsers..' {FFFFFF}пользователь(-я, -ей) из ваших списков.') end
   end)
 
   while true do
-    if sampGetChatString(99) == 'The server is restarting..' then loadData() end
     wait(0)
-    if doRemove then
-      showCursor(true, true)
-      renderposX, renderposY = getCursorPos()
-      renderFontDrawText(fontHeader, u8:decode(headerText.v)..' ['..#admins_online..']:', renderposX, renderposY, bit.bor(join_argb(255, color1.v[1] * 255, color1.v[2] * 255, color1.v[3] * 255), 0xFF000000))
-      renderposY = renderposY + 30
-      for _, v in ipairs(admins_online) do
-        renderFontDrawText(fontList, v['nick']..' ['..v['id']..']', renderposX, renderposY, bit.bor(join_argb(255, color2.v[1] * 255, color2.v[2] * 255, color2.v[3] * 255), 0xFF000000))
-        renderposY = renderposY + 15
-      end
-      if isKeyJustPressed(0x02) then
-        main_window_state.v = true
-        showCursor(false, false)
-        doRemove = false
-        alert('Отменено.')
-      end
-      if isKeyJustPressed(0x01) then
-        posX.v, posY.v = getCursorPos()
-        main_window_state.v = true
-        showCursor(false, false)
-        doRemove = false
-        alert('Новые координаты установлены.')
-        saveData()
-      end
+    if data['settings']['renderOnScreen'] and (not isKeyDown(0x77) or not data['settings']['hideOnScreenshot']) and (not sampIsChatInputActive() or not data['settings']['hideOnOpenChat']) then
+      local renderPosY = 300
+      renderFontDrawText(fontHeader, u8:decode('Admins')..' ['..#onlineUsers..']:', 900, 600, data['settings']['headerFontColor'])
     end
-    if not doRemove and showonscreen.v and (not isKeyDown(0x77) or not hideonscreen.v) and not sampIsChatInputActive() then
-      local renderPosY = posY.v
-      renderFontDrawText(fontHeader, u8:decode(headerText.v)..' ['..#admins_online..']:', posX.v, posY.v, bit.bor(join_argb(255, color1.v[1] * 255, color1.v[2] * 255, color1.v[3] * 255), 0xFF000000))
-      renderPosY = renderPosY + 30
-      for _, v in ipairs(admins_online) do
-        renderFontDrawText(fontList, v['nick']..' ['..v['id']..']', posX.v, renderPosY, bit.bor(join_argb(255, color2.v[1] * 255, color2.v[2] * 255, color2.v[3] * 255), 0xFF000000))
-        renderPosY = renderPosY + 15
-      end
-    end
-    imgui.Process = main_window_state.v
+    imgui.Process = mainWindowState.v
   end
 end
 
-function sLoadAdmins()
-  admins_online = {}
-  local ip, port = sampGetCurrentServerAddress()
-  for i1, v1 in ipairs(data['list']) do
-    if v1['isbuiltin'] or (v1['ip'] == ip and v1['port'] == port) then
-      for i2, v2 in ipairs(v1['admins']) do
-        for id = 0, sampGetMaxPlayerId(false) do
-          if sampIsPlayerConnected(id) then
-            if sampGetPlayerNickname(id) == v2 then
-              table.insert(admins_online, {nick = v2, id = id})
-            end
-          end
-        end
-      end
-    end
-  end
-end
-
-function loadAdmins()
-  sLoadAdmins()
-  sortAdmins()
-  alert('Список админов онлайн перезагружен.')
-end
-
-function checkupdates(json)
+function checkUpdates(json)
   local fpath = os.tmpname()
   if doesFileExist(fpath) then os.remove(fpath) end
   downloadUrlToFile(json, fpath, function(_, status, _, _)
-    if status == dlstatus.STATUSEX_ENDDOWNLOAD then
+    if status == 58 then
       if doesFileExist(fpath) then
         local f = io.open(fpath, 'r')
         if f then
-          local info = decodeJson(f:read('*a'))
-          local updateversion = info.version_num
+          local info = decodeJson(f: read('*a'))
           f:close()
           os.remove(fpath)
-          if updateversion > thisScript().version_num then
-            updatesavaliable = true
-            alert('Найдено объявление. Текущая версия: {9932cc}'..thisScript().version..'{FFFFFF}, новая версия: {9932cc}'..info.version..'{FFFFFF}.')
+          if info['version_num'] > thisScript()['version_num'] then
+            updatesAvaliable = true
+            alert('Найдено объявление. Текущая версия: {9932cc}'..thisScript()['version']..'{FFFFFF}, новая версия: {9932cc}'..info['version']..'{FFFFFF}.')
             return true
           else
-            updatesavaliable = false
+            updatesAvaliable = false
             alert('У вас установлена самая свежая версия скрипта.')
           end
         else
-          updatesavaliable = false
+          updatesAvaliable = false
           alert('Что-то пошло не так, упс. Попробуйте позже.')
         end
       end
@@ -380,8 +263,8 @@ function checkupdates(json)
 end
 
 function update(url)
-  downloadUrlToFile(url, thisScript().path, function(_, status1, _, _)
-    if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
+  downloadUrlToFile(url, thisScript().path, function(_, status, _, _)
+    if status == 6 then
       alert('Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...')
       alert('... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.')
       alert('Если что-то пошло не так, то сообщите мне об этом в VK или Telegram > {2980b0}vk.com/akionka teleg.run/akionka{FFFFFF}.')
@@ -398,83 +281,56 @@ function join_argb(a, r, g, b)
    return argb
 end
 
-function loadData()
-  admins_online = {}
-  admins        = {}
-  local path = getWorkingDirectory()..'\\config\\adminchecker.json'
-  if doesFileExist(path) then
-    local file = io.open(path)
-    data = decodeJson(file:read('*a'))
-    file:close()
-    loadAdmins()
-  else
-    local file = io.open(path, 'w+')
-    file:write(encodeJson(data))
-    file:close()
-  end
-  showonscreen     = imgui.ImBool(data['settings']['showonscreen'])
-  hideonscreen     = imgui.ImBool(data['settings']['hideonscreen'])
-  startmsg         = imgui.ImBool(data['settings']['startmsg'])
-  shownotif        = imgui.ImBool(data['settings']['shownotif'])
-  sorttype         = imgui.ImInt(data['settings']['sorttype'])
-  posX             = imgui.ImInt(data['settings']['posX'])
-  posY             = imgui.ImInt(data['settings']['posY'])
-  fontBufferHeader = imgui.ImBuffer(data['fonts']['header']['name'], 256)
-  fontSizeHeader   = imgui.ImInt(data['fonts']['header']['size'])
-  fontBufferList   = imgui.ImBuffer(data['fonts']['list']['name'], 256)
-  fontSizeList     = imgui.ImInt(data['fonts']['list']['size'])
-  r1, g1, b1       = imgui.ImColor(data['colors']['header']['r'], data['colors']['header']['g'], data['colors']['header']['b']): GetFloat4()
-  color1           = imgui.ImFloat3(r1, g1, b1)
-  r2, g2, b2       = imgui.ImColor(data['colors']['list']['r'], data['colors']['list']['g'], data['colors']['list']['b'])      : GetFloat4()
-  color2           = imgui.ImFloat3(r2, g2, b2)
-  headerText       = imgui.ImBuffer(data['settings']['headerText'], 64)
-  generateFont()
+function explode_argb(argb)
+  local a = bit.band(bit.rshift(argb, 24), 0xFF)
+  local r = bit.band(bit.rshift(argb, 16), 0xFF)
+  local g = bit.band(bit.rshift(argb, 8), 0xFF)
+  local b = bit.band(argb, 0xFF)
+  return a, r, g, b
+end
+
+function argb_to_rgba(argb)
+  local a, r, g, b = explode_argb(argb)
+  return join_argb(r, g, b, a)
+end
+
+function alert(text)
+  sampAddChatMessage(u8:decode('['..prefix..']: '..text), -1)
 end
 
 function saveData()
-  local path = getWorkingDirectory()..'\\config\\adminchecker.json'
-  local file = io.open(path, 'w+')
-  file:write(encodeJson({
-    settings = {
-      shownotif    = shownotif.v,
-      showonscreen = showonscreen.v,
-      posX         = posX.v,
-      posY         = posY.v,
-      startmsg     = startmsg.v,
-      sorttype     = sorttype.v,
-      hideonscreen = hideonscreen.v,
-      headerText   = headerText.v
-    },
-    colors = {
-      header = {r = color1.v[1] * 255, g = color1.v[2] * 255, b = color1.v[3] * 255},
-      list   = {r = color2.v[1] * 255, g = color2.v[2] * 255, b = color2.v[3] * 255},
-    },
-    fonts = {
-      header = {name = fontBufferHeader.v, size = fontSizeHeader.v},
-      list   = {name = fontBufferList.v, size = fontSizeList.v},
-    },
-    list = data['list'],
-  }))
-  file:close()
+  local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'w+')
+  configFile:write(encodeJson(data))
+  configFile:close()
 end
 
-function sortAdmins()
-  if sorttype.v ~= 0 then
-    table.sort(admins_online, function(a, b)
-      if sorttype.v == 1 then return a['id'] < b['id'] end
-      if sorttype.v == 2 then return a['id'] > b['id'] end
-      if sorttype.v == 3 then return a['nick'] < b['nick'] end
-      if sorttype.v == 4 then return a['nick'] > b['nick'] end
-    end)
+function loadData()
+  if doesFileExist(getWorkingDirectory()..'\\config\\checker.json') then
+    local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'r')
+    data = decodeJson(configFile:read('*a'))
+    configFile:close()
+    return
   end
+  local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'w+')
+  configFile:write(encodeJson(data))
+  configFile:close()
 end
 
-function parseText(text)
-  data['list'][selected]['admins'] = {}
-  for admin in text:gmatch('(%S+)') do table.insert(data['list'][selected]['admins'], admin) end
+function rebuildFonts()
+  alert('rebuilding')
+  fontHeader = renderCreateFont(data['settings']['headerFontName'], data['settings']['headerFontSize'], 5)
 end
 
-function generateFont()
-  fontHeader = renderCreateFont(fontBufferHeader.v, fontSizeHeader.v, 5)
-  fontList   = renderCreateFont(fontBufferList.v, fontSizeList.v, 5)
+function loadUsers()
+  loadedUsers    = {}
+  onlineUsers    = {}
+  local ip, port = sampGetCurrentServerAddress()
+
+  for i, v in ipairs(data['lists']) do
+    if v['isbuiltin'] or v['ip'] == ip and v['port'] == port then
+      for i, v in pairs(v['users']) do
+        table.insert(loadedUsers, v)
+      end
+    end
+  end
 end
