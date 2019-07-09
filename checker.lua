@@ -1,7 +1,7 @@
 script_name('Checker')
 script_author('akionka')
-script_version('1.10.1')
-script_version_number(19)
+script_version('1.10.2')
+script_version_number(20)
 
 --[[
    _____   _         ____     _____   ______     _____   _______         _____    _        ______               _____   ______
@@ -33,6 +33,9 @@ local data             = {
     headerFontName                  = 'Arial',
     headerFontSize                  = 9,
     headerFontColor                 = 0xFFFFFFFF,
+    headerText                      = 'Users online',
+    headerPosX                      = 450,
+    headerPosY                      = 450,
   },
   lists     = {
     {
@@ -61,7 +64,7 @@ function sampev.onSendClientJoin(version, mod, nickname, challengeResponse, join
     переподключился к новому серверу.
   ]]
 
-  loadUsers()
+  -- loadUsers()
 end
 
 
@@ -98,23 +101,26 @@ local mainWindowState       = imgui.ImBool(true)
 local headerFontNameBuffer  = imgui.ImBuffer('Arial', 256)
 local headerFontSizeBuffer  = imgui.ImInt(9)
 local headerFontColorBuffer = imgui.ImFloat3(0, 0, 0)
+local headerTextBuffer      = imgui.ImBuffer('Users online', 32)
+local headerPosXBuffer      = imgui.ImInt(450)
+local headerPosYBuffer      = imgui.ImInt(450)
 local headerFont            = renderCreateFont('Arial', 9, 5)
 
 
-local selected_tab = 2
-
+local selectedTab           = 1
+local movingInProgress      = false
 
 function imgui.OnDrawFrame()
   if mainWindowState.v then
     local resX, resY = getScreenResolution()
-    imgui.SetNextWindowSize(imgui.ImVec2(576, 324), 2)
+    imgui.SetNextWindowSize(imgui.ImVec2(576, 350), 2)
     imgui.SetNextWindowPos(imgui.ImVec2(resX/2, resY/2), 2, imgui.ImVec2(0.5, 0.5))
     imgui.Begin('Checker v'..thisScript()['version'], mainWindowState, imgui.WindowFlags.NoResize)
       imgui.BeginGroup()
         imgui.BeginChild('Left panel', imgui.ImVec2(100, 0), true)
-          if imgui.Selectable('Списки', selected_tab == 1) then selected_tab = 1 end
-          if imgui.Selectable('Настройки', selected_tab == 2) then selected_tab = 2 end
-          if imgui.Selectable('Информация', selected_tab == 3) then selected_tab = 3 end
+          if imgui.Selectable('Списки', selectedTab == 1) then selectedTab = 1 end
+          if imgui.Selectable('Настройки', selectedTab == 2) then selectedTab = 2 end
+          if imgui.Selectable('Информация', selectedTab == 3) then selectedTab = 3 end
         imgui.EndChild()
       imgui.EndGroup()
 
@@ -122,10 +128,10 @@ function imgui.OnDrawFrame()
 
       imgui.BeginGroup()
         imgui.BeginChild('Center panel')
-          if selected_tab == 1 then
+          if selectedTab == 1 then
             --
           end
-          if selected_tab == 2 then
+          if selectedTab == 2 then
             if imgui.Checkbox('Всегда автоматически проверять обновления', imgui.ImBool(data['settings']['alwaysAutoCheckUpdates'])) then
               data['settings']['alwaysAutoCheckUpdates'] = not data['settings']['alwaysAutoCheckUpdates']
               saveData()
@@ -146,8 +152,12 @@ function imgui.OnDrawFrame()
               data['settings']['hideOnOpenChat'] = not data['settings']['hideOnOpenChat']
               saveData()
             end
-            -- local output =  imgui.InputText(const char* label,char* buf,size_t buf_size,ImGuiInputTextFlags flags = 0,ImGuiTextEditCallback callback = NULL,void* user_data = NULL)
             imgui.PushItemWidth(100)
+            if imgui.InputText('Текст шапки', headerTextBuffer) then
+              data['settings']['headerText'] = headerTextBuffer.v
+              saveData()
+              rebuildFonts()
+            end
             if imgui.InputText('Название шрифта шапки', headerFontNameBuffer) then
               data['settings']['headerFontName'] = headerFontNameBuffer.v
               saveData()
@@ -158,10 +168,28 @@ function imgui.OnDrawFrame()
               saveData()
               rebuildFonts()
             end
+            if imgui.ColorEdit3('Цвет шрифта шапки', headerFontColorBuffer) then
+              data['settings']['headerFontColor'] = join_argb(255, headerFontColorBuffer.v[1]*255, headerFontColorBuffer.v[2]*255, headerFontColorBuffer.v[3]*255)
+              saveData()
+              rebuildFonts()
+            end
+            if imgui.DragInt('Позиция списка по оси X', headerPosXBuffer, 1, 0, resX) then
+              data['settings']['headerPosX'] = headerPosXBuffer.v
+              saveData()
+            end
+            if imgui.DragInt('Позиция списка по оси Y', headerPosYBuffer, 1, 0, resY) then
+              data['settings']['headerPosY'] = headerPosYBuffer.v
+              saveData()
+            end
+            if imgui.Button('Указать позицию списка с помощью курсора') then
+              movingInProgress  = true
+              mainWindowState.v = false
+              alert('Нажмите {9932cc}ЛКМ{FFFFFF}, чтобы завершить. Нажмите {9932cc}ПКМ{FFFFFF}, чтобы отменить.')
+            end
             imgui.PopItemWidth()
 
           end
-          if selected_tab == 3 then
+          if selectedTab == 3 then
             imgui.Text('Название: Checker')
             imgui.Text('Автор: Akionka')
             imgui.Text('Версия: '..thisScript().version_num..' ('..thisScript().version..')')
@@ -208,6 +236,8 @@ function main()
   print(u8:decode('{FFFFFF}Версия: {9932cc}'..thisScript()['version']..'{FFFFFF}. Автор: {9932cc}Akionka{FFFFFF}.'))
   print(u8:decode('{FFFFFF}Приятного использования! :)'))
 
+  if data['settings']['alwaysAutoCheckUpdates'] then checkUpdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json') end
+
   sampRegisterChatCommand('checker', function()
     mainWindowState.v = not mainWindowState.v
   end)
@@ -226,9 +256,30 @@ function main()
 
   while true do
     wait(0)
-    if data['settings']['renderOnScreen'] and (not isKeyDown(0x77) or not data['settings']['hideOnScreenshot']) and (not sampIsChatInputActive() or not data['settings']['hideOnOpenChat']) then
-      local renderPosY = 300
-      renderFontDrawText(fontHeader, u8:decode('Admins')..' ['..#onlineUsers..']:', 900, 600, data['settings']['headerFontColor'])
+    if movingInProgress then
+      showCursor(true, true)
+      renderPosX, renderPosY = getCursorPos()
+      renderList(renderPosX, renderPosY)
+      if isKeyJustPressed(0x02) then
+        mainWindowState.v = true
+        showCursor(false, false)
+        movingInProgress = false
+        alert('Отменено.')
+      end
+      if isKeyJustPressed(0x01) then
+        data['settings']['headerPosX'], data['settings']['headerPosY'] = getCursorPos()
+        headerPosXBuffer.v = data['settings']['headerPosX']
+        headerPosYBuffer.v = data['settings']['headerPosY']
+        mainWindowState.v = true
+        showCursor(false, false)
+        movingInProgress = false
+        alert('Новые координаты установлены.')
+        saveData()
+      end
+
+    end
+    if not movingInProgress and data['settings']['renderOnScreen'] and (not isKeyDown(0x77) or not data['settings']['hideOnScreenshot']) and (not sampIsChatInputActive() or not data['settings']['hideOnOpenChat']) then
+      renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
     end
     imgui.Process = mainWindowState.v
   end
@@ -305,19 +356,27 @@ function saveData()
 end
 
 function loadData()
-  if doesFileExist(getWorkingDirectory()..'\\config\\checker.json') then
-    local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'r')
-    data = decodeJson(configFile:read('*a'))
+  if not doesFileExist(getWorkingDirectory()..'\\config\\checker.json') then
+    local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'w+')
+    configFile:write(encodeJson(data))
     configFile:close()
     return
   end
-  local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'w+')
-  configFile:write(encodeJson(data))
+
+  local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'r')
+  data = decodeJson(configFile:read('*a'))
   configFile:close()
+
+  local a, r, g, b        = explode_argb(data['settings']['headerFontColor'])
+  headerFontNameBuffer.v  = data['settings']['headerFontName']
+  headerFontSizeBuffer.v  = data['settings']['headerFontSize']
+  headerPosXBuffer.v      = data['settings']['headerPosX']
+  headerPosYBuffer.v      = data['settings']['headerPosY']
+  headerTextBuffer.v      = data['settings']['headerText']
+  headerFontColorBuffer   = imgui.ImFloat3(r/255, g/255, b/255)
 end
 
 function rebuildFonts()
-  alert('rebuilding')
   fontHeader = renderCreateFont(data['settings']['headerFontName'], data['settings']['headerFontSize'], 5)
 end
 
@@ -334,3 +393,11 @@ function loadUsers()
     end
   end
 end
+
+ function renderList(x, y)
+  renderFontDrawText(fontHeader, u8:decode(data['settings']['headerText'])..' ['..#onlineUsers..']:', x, y, data['settings']['headerFontColor'])
+  for i, v in ipairs(onlineUsers) do
+    renderFontDrawText(fontHeader, v['nickname']..' ['..v['id']..']', data['settings']['headerPosY'], renderPosY, bit.bor(join_argb(255, color2.v[1] * 255, color2.v[2] * 255, color2.v[3] * 255), 0xFF000000))
+    y = y + data['settings']['headerFontSize']
+  end
+ end
