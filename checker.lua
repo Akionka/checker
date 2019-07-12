@@ -579,6 +579,6 @@ end
 
 function parseText(text)
   local tempTable = {}
-  for user in text:gmatch('(%S+)') do table.insert(tempTable, user) end
+  for user in text:gmatch('([%w+%d+%[%]_@$]+)') do table.insert(tempTable, user) end
   return tempTable
 end
