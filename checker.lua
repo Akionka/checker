@@ -1,7 +1,7 @@
 script_name('Checker')
 script_author('akionka')
-script_version('1.10.2')
-script_version_number(20)
+script_version('2.0.0')
+script_version_number(21)
 
 --[[
    _____   _         ____     _____   ______     _____   _______         _____    _        ______               _____   ______
@@ -43,43 +43,84 @@ local data             = {
       title = 'Common',
       ip    = '127.0.0.1',
       port  = 7777,
-      color = {
-        r = 255,
-        g = 255,
-        b = 255,
-      },
+      color = 0xFFFFFFFF,
       users = {'West_Side', 'Drop_Table'}
     },
   },
 }
 tempBuffers = {}
 
-function applyCustomStyle()imgui.SwitchContext()local a=imgui.GetStyle()local b=a.Colors;local c=imgui.Col;local d=imgui.ImVec4;a.WindowRounding=0.0;a.WindowTitleAlign=imgui.ImVec2(0.5,0.5)a.ChildWindowRounding=0.0;a.FrameRounding=0.0;a.ItemSpacing=imgui.ImVec2(5.0,5.0)a.ScrollbarSize=13.0;a.ScrollbarRounding=0;a.GrabMinSize=8.0;a.GrabRounding=0.0;b[c.TitleBg]=d(0.60,0.20,0.80,1.00)b[c.TitleBgActive]=d(0.60,0.20,0.80,1.00)b[c.TitleBgCollapsed]=d(0.60,0.20,0.80,1.00)b[c.CheckMark]=d(0.60,0.20,0.80,1.00)b[c.Button]=d(0.60,0.20,0.80,0.31)b[c.ButtonHovered]=d(0.60,0.20,0.80,0.80)b[c.ButtonActive]=d(0.60,0.20,0.80,1.00)b[c.WindowBg]=d(0.13,0.13,0.13,1.00)b[c.Header]=d(0.60,0.20,0.80,0.31)b[c.HeaderHovered]=d(0.60,0.20,0.80,0.80)b[c.HeaderActive]=d(0.60,0.20,0.80,1.00)b[c.FrameBg]=d(0.60,0.20,0.80,0.31)b[c.FrameBgHovered]=d(0.60,0.20,0.80,0.80)b[c.FrameBgActive]=d(0.60,0.20,0.80,1.00)b[c.ScrollbarBg]=d(0.60,0.20,0.80,0.31)b[c.ScrollbarGrab]=d(0.60,0.20,0.80,0.31)b[c.ScrollbarGrabHovered]=d(0.60,0.20,0.80,0.80)b[c.ScrollbarGrabActive]=d(0.60,0.20,0.80,1.00)b[c.Text]=d(1.00,1.00,1.00,1.00)b[c.Border]=d(0.60,0.20,0.80,0.00)b[c.BorderShadow]=d(0.00,0.00,0.00,0.00)b[c.CloseButton]=d(0.60,0.20,0.80,0.31)b[c.CloseButtonHovered]=d(0.60,0.20,0.80,0.80)b[c.CloseButtonActive]=d(0.60,0.20,0.80,1.00)end
+
+function applyCustomStyle()
+  imgui.SwitchContext()
+  local style  = imgui.GetStyle()
+  local colors = style.Colors
+  local clr    = imgui.Col
+  local ImVec4 = imgui.ImVec4
+
+  style.WindowRounding      = 0.0
+  style.WindowTitleAlign    = imgui.ImVec2(0.5, 0.5)
+  style.ChildWindowRounding = 0.0
+  style.FrameRounding       = 0.0
+  style.ItemSpacing         = imgui.ImVec2(5.0, 5.0)
+  style.ScrollbarSize       = 13.0
+  style.ScrollbarRounding   = 0
+  style.GrabMinSize         = 8.0
+  style.GrabRounding        = 0.0
+
+  colors[clr.FrameBg]             = ImVec4(0.00, 0.00, 0.00, 0.00)
+  colors[clr.FrameBgHovered]      = ImVec4(0.00, 0.00, 0.00, 0.00)
+  colors[clr.FrameBgActive]       = ImVec4(0.00, 0.00, 0.00, 0.00)
+  colors[clr.TitleBg]             = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.TitleBgActive]       = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.TitleBgCollapsed]    = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.CheckMark]           = ImVec4(0.60, 0.20, 0.80, 1.00)
+  -- colors[clr.SliderGrab]       = ImVec4(0.60, 0.20, 0.80, 1.00)
+  -- colors[clr.SliderGrabActive] = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.Button]              = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.ButtonHovered]       = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.ButtonActive]        = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.Header]              = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.HeaderHovered]       = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.HeaderActive]        = ImVec4(0.60, 0.20, 0.80, 1.00)
+  colors[clr.Separator]           = colors[clr.Border]
+  colors[clr.SeparatorHovered]    = ImVec4(0.75, 0.10, 0.10, 0.78)
+  colors[clr.SeparatorActive]     = ImVec4(0.75, 0.10, 0.10, 1.00)
+  colors[clr.ResizeGrip]          = ImVec4(0.15, 0.68, 0.38, 1.00)
+  colors[clr.ResizeGripHovered]   = ImVec4(0.15, 0.68, 0.38, 1.00)
+  colors[clr.ResizeGripActive]    = ImVec4(0.15, 0.68, 0.38, 0.95)
+  colors[clr.TextSelectedBg]      = ImVec4(0.98, 0.26, 0.26, 0.35)
+  colors[clr.Text]                = ImVec4(1.00, 1.00, 1.00, 1.00)
+  colors[clr.TextDisabled]        = ImVec4(0.50, 0.50, 0.50, 1.00)
+  colors[clr.WindowBg]            = ImVec4(0.13, 0.13, 0.13, 1.00)
+  colors[clr.ChildWindowBg]       = ImVec4(0.13, 0.13, 0.13, 1.00)
+  colors[clr.PopupBg]             = ImVec4(0.13, 0.13, 0.13, 1.00)
+  colors[clr.ComboBg]             = colors[clr.PopupBg]
+  colors[clr.Border]              = ImVec4(0.43, 0.43, 0.50, 0.00)
+  colors[clr.BorderShadow]        = ImVec4(0.00, 0.00, 0.00, 0.00)
+  colors[clr.CloseButton]         = ImVec4(0.60, 0.20, 0.80, 0.50)
+  colors[clr.CloseButtonHovered]  = ImVec4(0.60, 0.20, 0.80, 0.50)
+  colors[clr.CloseButtonActive]   = ImVec4(0.60, 0.20, 0.80, 0.50)
+end
 
 
 function sampev.onSendClientJoin(version, mod, nickname, challengeResponse, joinAuthKey, clientVer, unknown)
   --[[
     Обнуление онлайн пользователей, загруженных пользователей после (ре)коннекта.
-    Также, загрузка новых пользователей, если, допустим, пользователь скрипта
-    переподключился к новому серверу.
   ]]
 
-  -- loadUsers()
+  loadedUsers    = {}
+  onlineUsers    = {}
 end
 
 
 function sampev.onPlayerJoin(id, color, isNPC, nickname)
   --[[
-    Добавление нового пользователя в список онлайн, когда тот подключается.
-    Также вызывается много-много раз когда сам пользователь подключается к серверу.
+    Полная перезагрузка всех пользователей при каждом подключении нового.
+    Слава богу луа достаточно шустрый и почти не лагает.
   ]]
 
-  for i, v in ipairs(loadedUsers) do
-    if v == nickname then
-      table.insert(onlineUsers, {nickname = nickname, id = id})
-      break
-    end
-  end
+  rebuildUsers()
 end
 
 
@@ -97,7 +138,7 @@ function sampev.onPlayerQuit(id, reason)
 end
 
 
-local mainWindowState       = imgui.ImBool(true)
+local mainWindowState       = imgui.ImBool(false)
 local headerFontNameBuffer  = imgui.ImBuffer('Arial', 256)
 local headerFontSizeBuffer  = imgui.ImInt(9)
 local headerFontColorBuffer = imgui.ImFloat3(0, 0, 0)
@@ -107,7 +148,8 @@ local headerPosYBuffer      = imgui.ImInt(450)
 local headerFont            = renderCreateFont('Arial', 9, 5)
 
 
-local selectedTab           = 1
+local selectedTab           = 0
+local selectedList          = 0
 local movingInProgress      = false
 
 function imgui.OnDrawFrame()
@@ -125,13 +167,121 @@ function imgui.OnDrawFrame()
       imgui.EndGroup()
 
       imgui.SameLine()
-
-      imgui.BeginGroup()
-        imgui.BeginChild('Center panel')
-          if selectedTab == 1 then
-            --
+      if selectedTab == 1 then
+        imgui.BeginGroup()
+          imgui.BeginChild('Center panel', imgui.ImVec2(145, -imgui.GetItemsLineHeightWithSpacing()), true)
+            for i, v in ipairs(data['lists']) do
+              if imgui.Selectable(v['title']..'##'..i, selectedList == i, imgui.SelectableFlags.AllowDoubleClick) then
+                selectedList = i
+                if imgui.IsMouseDoubleClicked(0) then
+                  local a, r, g, b = explode_argb(data['lists'][selectedList]['color'])
+                  tempBuffers['listTitle'] = imgui.ImBuffer(data['lists'][selectedList]['title'], 128)
+                  tempBuffers['listIp']    = imgui.ImBuffer(data['lists'][selectedList]['ip'], 16)
+                  tempBuffers['listPort']  = imgui.ImInt(data['lists'][selectedList]['port'])
+                  tempBuffers['listColor'] = imgui.ImFloat3(r/255, g/255, b/255)
+                  imgui.OpenPopup('Изменить настройки списка##'..i)
+                end
+              end
+              if imgui.BeginPopupModal('Изменить настройки списка##'..i, nil, 64) then
+                imgui.InputText('Название', tempBuffers['listTitle'])
+                imgui.InputText('IP', tempBuffers['listIp'])
+                imgui.InputInt('Port', tempBuffers['listPort'])
+                imgui.ColorEdit3('Цвет', tempBuffers['listColor'])
+                imgui.Separator()
+                imgui.SetCursorPosX((imgui.GetWindowWidth() - 240 + imgui.GetStyle().ItemSpacing.x) / 2)
+                if imgui.Button('Готово', imgui.ImVec2(120, 0)) then
+                  data['lists'][selectedList] = {
+                    isbuiltin = data['lists'][selectedList]['isbuiltin'],
+                    title     = tempBuffers['listTitle'].v,
+                    ip        = tempBuffers['listIp'].v,
+                    port      = tempBuffers['listPort'].v,
+                    color     = join_argb(255, tempBuffers['listColor'].v[1]*255, tempBuffers['listColor'].v[2]*255, tempBuffers['listColor'].v[3]*255),
+                    users     = data['lists'][selectedList]['users']
+                  }
+                  saveData()
+                  imgui.CloseCurrentPopup()
+                end
+                imgui.SameLine()
+                if imgui.Button('Отмена', imgui.ImVec2(120, 0)) then imgui.CloseCurrentPopup() end
+                    imgui.EndPopup()
+                  end
+                end
+          imgui.EndChild()
+          if imgui.Button('Добавить', imgui.ImVec2(70, 0)) then
+            local name               = sampGetCurrentServerName()
+            local ip, port           = sampGetCurrentServerAddress()
+            tempBuffers['listTitle'] = imgui.ImBuffer(u8:encode(name), 128)
+            tempBuffers['listIp']    = imgui.ImBuffer(ip, 16)
+            tempBuffers['listPort']  = imgui.ImInt(port)
+            tempBuffers['listColor'] = imgui.ImFloat3(0, 0, 0)
+            imgui.OpenPopup('Добавление списка')
           end
-          if selectedTab == 2 then
+          imgui.SameLine()
+          if selectedList ~= 0 then
+            if imgui.Button('Удалить', imgui.ImVec2(70, 0)) and not data['lists'][selectedList]['isbuiltin'] then
+              imgui.OpenPopup('Удаление списка')
+            end
+          end
+
+          if imgui.BeginPopupModal('Добавление списка', nil, 64) then
+            imgui.InputText('Название', tempBuffers['listTitle'])
+            imgui.InputText('IP', tempBuffers['listIp'])
+            imgui.InputInt('Port', tempBuffers['listPort'])
+            imgui.ColorEdit3('Цвет', tempBuffers['listColor'])
+            imgui.Separator()
+            imgui.SetCursorPosX((imgui.GetWindowWidth() - 240 + imgui.GetStyle().ItemSpacing.x) / 2)
+            if imgui.Button('Готово', imgui.ImVec2(120, 0)) then
+              table.insert(data['lists'], {
+                isbuiltin = false,
+                title     = tempBuffers['listTitle'].v,
+                ip        = tempBuffers['listIp'].v,
+                port      = tempBuffers['listPort'].v,
+                color     = join_argb(255, tempBuffers['listColor'].v[1]*255, tempBuffers['listColor'].v[2]*255, tempBuffers['listColor'].v[3]*255),
+                users     = {''}
+              })
+              saveData()
+              imgui.CloseCurrentPopup()
+            end
+            imgui.SameLine()
+            if imgui.Button('Отмена', imgui.ImVec2(120, 0)) then imgui.CloseCurrentPopup() end
+            imgui.EndPopup()
+          end
+
+          if imgui.BeginPopupModal('Удаление списка', nil, 2) then
+            imgui.Text('Удаление списка приведет к полной потере всех данных.\nЖелаете продолжить?')
+            imgui.Separator()
+            imgui.SetCursorPosX((imgui.GetWindowWidth() - 240 + imgui.GetStyle().ItemSpacing.x) / 2)
+            if imgui.Button('Да', imgui.ImVec2(120, 0)) then table.remove(data['lists'], selectedList) selectedList = 0 saveData() imgui.CloseCurrentPopup() end
+            imgui.SameLine()
+            if imgui.Button('Нет', imgui.ImVec2(120, 0)) then imgui.CloseCurrentPopup() end
+            imgui.EndPopup()
+          end
+        imgui.EndGroup()
+        imgui.SameLine()
+        imgui.BeginGroup()
+          imgui.BeginChild('Right', imgui.ImVec2(150, 0), true)
+            if selectedList ~= 0 then
+              tempBuffers['usersListTextBuffer'] = imgui.ImBuffer(table.concat(data['lists'][selectedList]['users'], '\n'), 0xFFFF)
+              if imgui.InputTextMultiline('##userslist', tempBuffers['usersListTextBuffer'], imgui.ImVec2(150, -1)) then
+                local tempTable = parseText(tempBuffers['usersListTextBuffer'].v)
+                data['lists'][selectedList]['users'] = #tempTable > 0 and tempTable or {''}
+                saveData()
+                rebuildUsers()
+              end
+            end
+          imgui.EndChild()
+          imgui.SameLine()
+          imgui.BeginChild('Users list', imgui.ImVec2(150, 0), true)
+            if selectedList ~= 0 then
+              imgui.Text(table.concat(data['lists'][selectedList]['users'], '\n'))
+            end
+          imgui.EndChild()
+        imgui.EndGroup()
+
+      end
+      if selectedTab == 2 then
+        imgui.BeginGroup()
+          imgui.BeginChild('Center panel')
             if imgui.Checkbox('Всегда автоматически проверять обновления', imgui.ImBool(data['settings']['alwaysAutoCheckUpdates'])) then
               data['settings']['alwaysAutoCheckUpdates'] = not data['settings']['alwaysAutoCheckUpdates']
               saveData()
@@ -187,9 +337,12 @@ function imgui.OnDrawFrame()
               alert('Нажмите {9932cc}ЛКМ{FFFFFF}, чтобы завершить. Нажмите {9932cc}ПКМ{FFFFFF}, чтобы отменить.')
             end
             imgui.PopItemWidth()
-
-          end
-          if selectedTab == 3 then
+          imgui.EndChild()
+        imgui.EndGroup()
+      end
+      if selectedTab == 3 then
+        imgui.BeginGroup()
+          imgui.BeginChild('Center panel')
             imgui.Text('Название: Checker')
             imgui.Text('Автор: Akionka')
             imgui.Text('Версия: '..thisScript().version_num..' ('..thisScript().version..')')
@@ -204,19 +357,14 @@ function imgui.OnDrawFrame()
                 checkUpdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json')
               end
             end
+            imgui.SameLine()
+            if imgui.Button('Группа ВКонтакте', imgui.ImVec2(150, 0)) then os.execute('explorer "https://vk.com/akionkamods"') end
             if imgui.Button('Bug report [VK]', imgui.ImVec2(150, 0)) then os.execute('explorer "https://vk.com/akionka"') end
             imgui.SameLine()
             if imgui.Button('Bug report [Telegram]', imgui.ImVec2(150, 0)) then os.execute('explorer "https://teleg.run/akionka"') end
-          end
-        imgui.EndChild()
-      imgui.EndGroup()
-
-      imgui.SameLine()
-
-      imgui.BeginGroup()
-        imgui.BeginChild('Right panel')
-        imgui.EndChild()
-      imgui.EndGroup()
+          imgui.EndChild()
+        imgui.EndGroup()
+      end
     imgui.End()
   end
 end
@@ -230,7 +378,7 @@ function main()
   applyCustomStyle()
   loadData()
   rebuildFonts()
-  loadUsers()
+  rebuildUsers()
 
   print(u8:decode('{FFFFFF}Скрипт успешно загружен.'))
   print(u8:decode('{FFFFFF}Версия: {9932cc}'..thisScript()['version']..'{FFFFFF}. Автор: {9932cc}Akionka{FFFFFF}.'))
@@ -285,6 +433,7 @@ function main()
   end
 end
 
+
 function checkUpdates(json)
   local fpath = os.tmpname()
   if doesFileExist(fpath) then os.remove(fpath) end
@@ -324,6 +473,7 @@ function update(url)
   end)
 end
 
+
 function join_argb(a, r, g, b)
    local argb = b
    argb = bit.bor(argb, bit.lshift(g, 8))
@@ -331,6 +481,7 @@ function join_argb(a, r, g, b)
    argb = bit.bor(argb, bit.lshift(a, 24))
    return argb
 end
+
 
 function explode_argb(argb)
   local a = bit.band(bit.rshift(argb, 24), 0xFF)
@@ -340,20 +491,24 @@ function explode_argb(argb)
   return a, r, g, b
 end
 
+
 function argb_to_rgba(argb)
   local a, r, g, b = explode_argb(argb)
   return join_argb(r, g, b, a)
 end
 
+
 function alert(text)
   sampAddChatMessage(u8:decode('['..prefix..']: '..text), -1)
 end
+
 
 function saveData()
   local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'w+')
   configFile:write(encodeJson(data))
   configFile:close()
 end
+
 
 function loadData()
   if not doesFileExist(getWorkingDirectory()..'\\config\\checker.json') then
@@ -376,9 +531,6 @@ function loadData()
   headerFontColorBuffer   = imgui.ImFloat3(r/255, g/255, b/255)
 end
 
-function rebuildFonts()
-  fontHeader = renderCreateFont(data['settings']['headerFontName'], data['settings']['headerFontSize'], 5)
-end
 
 function loadUsers()
   loadedUsers    = {}
@@ -386,18 +538,47 @@ function loadUsers()
   local ip, port = sampGetCurrentServerAddress()
 
   for i, v in ipairs(data['lists']) do
-    if v['isbuiltin'] or v['ip'] == ip and v['port'] == port then
-      for i, v in pairs(v['users']) do
-        table.insert(loadedUsers, v)
+    if v['isbuiltin'] or (v['ip'] == ip and v['port'] == port) and type(v['users']) == 'table' then
+      for _, v in pairs(v['users']) do
+        table.insert(loadedUsers, {nickname = v, listid = i})
       end
     end
   end
 end
 
- function renderList(x, y)
-  renderFontDrawText(fontHeader, u8:decode(data['settings']['headerText'])..' ['..#onlineUsers..']:', x, y, data['settings']['headerFontColor'])
-  for i, v in ipairs(onlineUsers) do
-    renderFontDrawText(fontHeader, v['nickname']..' ['..v['id']..']', data['settings']['headerPosY'], renderPosY, bit.bor(join_argb(255, color2.v[1] * 255, color2.v[2] * 255, color2.v[3] * 255), 0xFF000000))
-    y = y + data['settings']['headerFontSize']
+
+function rebuildFonts()
+  fontHeader = renderCreateFont(data['settings']['headerFontName'], data['settings']['headerFontSize'], 5)
+end
+
+
+function rebuildUsers()
+  loadUsers()
+  for i, v in ipairs(loadedUsers) do
+    for i = 0, sampGetMaxPlayerId(false) do
+      if sampIsPlayerConnected(i) then
+        if sampGetPlayerNickname(i) == u8:decode(v['nickname']) then
+          table.insert(onlineUsers, {nickname = u8:decode(v['nickname']), id = i, listid = v['listid']})
+        end
+      end
+    end
   end
- end
+end
+
+
+function renderList(x, y)
+  local renderPosY = y
+  renderFontDrawText(fontHeader, u8:decode(data['settings']['headerText'])..' ['..#onlineUsers..']:', x, y, data['settings']['headerFontColor'])
+  renderPosY = renderPosY + data['settings']['headerFontSize']
+  for i, v in ipairs(onlineUsers) do
+    renderPosY = renderPosY + data['settings']['headerFontSize'] * 2
+    renderFontDrawText(fontHeader, v['nickname']..' ['..v['id']..']', x, renderPosY, data['lists'][v['listid']]['color'])
+  end
+end
+
+
+function parseText(text)
+  local tempTable = {}
+  for user in text:gmatch('(%S+)') do table.insert(tempTable, user) end
+  return tempTable
+end
