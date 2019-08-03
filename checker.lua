@@ -1,7 +1,13 @@
 script_name('Checker')
 script_author('akionka')
-script_version('2.0.0')
-script_version_number(21)
+script_version('2.1.0')
+script_version_number(22)
+script_moonloader(27)
+
+require 'deps' {
+  'fyp:samp-lua',
+  'fyp:moon-imgui',
+}
 
 --[[
    _____   _         ____     _____   ______     _____   _______         _____    _        ______               _____   ______
@@ -30,9 +36,13 @@ local data             = {
     renderOnScreen                  = true,
     hideOnScreenshot                = false,
     hideOnOpenChat                  = false,
+    listFontName                    = 'Arial',
+    listFontSize                    = 9,
+    listFontFlags                   = 5,
     headerFontName                  = 'Arial',
     headerFontSize                  = 9,
     headerFontColor                 = 0xFFFFFFFF,
+    headerFontFlags                 = 5,
     headerText                      = 'Users online',
     headerPosX                      = 450,
     headerPosY                      = 450,
@@ -40,11 +50,11 @@ local data             = {
   lists     = {
     {
       isbuiltin = true,
-      title = 'Common',
-      ip    = '127.0.0.1',
-      port  = 7777,
-      color = 0xFFFFFFFF,
-      users = {'West_Side', 'Drop_Table'}
+      title     = 'Common',
+      ip        = '127.0.0.1',
+      port      = 7777,
+      color     = 0xFFFFFFFF,
+      users     = {'West_Side', 'Drop_Table'}
     },
   },
 }
@@ -138,14 +148,19 @@ function sampev.onPlayerQuit(id, reason)
 end
 
 
-local mainWindowState       = imgui.ImBool(false)
+local mainWindowState       = imgui.ImBool(true)
+local listFontNameBuffer    = imgui.ImBuffer('Arial', 256)
+local listFontSizeBuffer    = imgui.ImInt(9)
+local listFontFlags         = 5
 local headerFontNameBuffer  = imgui.ImBuffer('Arial', 256)
 local headerFontSizeBuffer  = imgui.ImInt(9)
+local headerFontFlags       = 5
 local headerFontColorBuffer = imgui.ImFloat3(0, 0, 0)
 local headerTextBuffer      = imgui.ImBuffer('Users online', 32)
 local headerPosXBuffer      = imgui.ImInt(450)
 local headerPosYBuffer      = imgui.ImInt(450)
 local headerFont            = renderCreateFont('Arial', 9, 5)
+local listFont              = renderCreateFont('Arial', 9, 5)
 
 
 local selectedTab           = 0
@@ -303,6 +318,44 @@ function imgui.OnDrawFrame()
               saveData()
             end
             imgui.PushItemWidth(100)
+            if imgui.InputText('Название шрифта списка', listFontNameBuffer) then
+              data['settings']['listFontName'] = listFontNameBuffer.v
+              saveData()
+              rebuildFonts()
+            end
+            if imgui.InputInt('Размер шрифта спика', listFontSizeBuffer, 1, 3) then
+              data['settings']['listFontSize'] = listFontSizeBuffer.v
+              saveData()
+              rebuildFonts()
+            end
+            imgui.Text('Флаги шрифта списка:')
+            if imgui.RadioButton('Полужирный##list', bit.band(0x1, listFontFlags) == 0x1) then
+              listFontFlags = bit.bxor(0x1, listFontFlags)
+              data['settings']['listFontFlags'] = listFontFlags
+              saveData()
+              rebuildFonts()
+            end
+            imgui.SameLine()
+            if imgui.RadioButton('Курсив##list', bit.band(0x2, listFontFlags) == 0x2) then
+              listFontFlags = bit.bxor(0x2, listFontFlags)
+              data['settings']['listFontFlags'] = listFontFlags
+              saveData()
+              rebuildFonts()
+            end
+            imgui.SameLine()
+            if imgui.RadioButton('Контур##list', bit.band(0x4, listFontFlags) == 0x4) then
+              listFontFlags = bit.bxor(0x4, listFontFlags)
+              data['settings']['listFontFlags'] = listFontFlags
+              saveData()
+              rebuildFonts()
+            end
+            imgui.SameLine()
+            if imgui.RadioButton('Тень##list', bit.band(0x8, listFontFlags) == 0x8) then
+              listFontFlags = bit.bxor(0x8, listFontFlags)
+              data['settings']['listFontFlags'] = listFontFlags
+              saveData()
+              rebuildFonts()
+            end
             if imgui.InputText('Текст шапки', headerTextBuffer) then
               data['settings']['headerText'] = headerTextBuffer.v
               saveData()
@@ -315,6 +368,35 @@ function imgui.OnDrawFrame()
             end
             if imgui.InputInt('Размер шрифта шапки', headerFontSizeBuffer, 1, 3) then
               data['settings']['headerFontSize'] = headerFontSizeBuffer.v
+              saveData()
+              rebuildFonts()
+            end
+            imgui.Text('Флаги шрифта шапки:')
+            if imgui.RadioButton('Полужирный##header', bit.band(0x1, headerFontFlags) == 0x1) then
+              headerFontFlags = bit.bxor(0x1, headerFontFlags)
+              print(headerFontFlags)
+              data['settings']['headerFontFlags'] = headerFontFlags
+              saveData()
+              rebuildFonts()
+            end
+            imgui.SameLine()
+            if imgui.RadioButton('Курсив##header', bit.band(0x2, headerFontFlags) == 0x2) then
+              headerFontFlags = bit.bxor(0x2, headerFontFlags)
+              data['settings']['headerFontFlags'] = headerFontFlags
+              saveData()
+              rebuildFonts()
+            end
+            imgui.SameLine()
+            if imgui.RadioButton('Контур##header', bit.band(0x4, headerFontFlags) == 0x4) then
+              headerFontFlags = bit.bxor(0x4, headerFontFlags)
+              data['settings']['headerFontFlags'] = headerFontFlags
+              saveData()
+              rebuildFonts()
+            end
+            imgui.SameLine()
+            if imgui.RadioButton('Тень##header', bit.band(0x8, headerFontFlags) == 0x8) then
+              headerFontFlags = bit.bxor(0x8, headerFontFlags)
+              data['settings']['headerFontFlags'] = headerFontFlags
               saveData()
               rebuildFonts()
             end
@@ -523,11 +605,15 @@ function loadData()
   configFile:close()
 
   local a, r, g, b        = explode_argb(data['settings']['headerFontColor'])
-  headerFontNameBuffer.v  = data['settings']['headerFontName']
-  headerFontSizeBuffer.v  = data['settings']['headerFontSize']
-  headerPosXBuffer.v      = data['settings']['headerPosX']
-  headerPosYBuffer.v      = data['settings']['headerPosY']
-  headerTextBuffer.v      = data['settings']['headerText']
+  listFontNameBuffer.v    = data['settings']['listFontName'] or 'Arial'
+  listFontSizeBuffer.v    = data['settings']['listFontSize'] or 9
+  listFontFlags           = data['settings']['listFontFlags'] or 5
+  headerFontNameBuffer.v  = data['settings']['headerFontName'] or 'Arial'
+  headerFontSizeBuffer.v  = data['settings']['headerFontSize'] or 9
+  headerFontFlags         = data['settings']['headerFontFlags'] or 5
+  headerPosXBuffer.v      = data['settings']['headerPosX'] or 450
+  headerPosYBuffer.v      = data['settings']['headerPosY'] or 450
+  headerTextBuffer.v      = data['settings']['headerText'] or 'Users online'
   headerFontColorBuffer   = imgui.ImFloat3(r/255, g/255, b/255)
 end
 
@@ -548,7 +634,8 @@ end
 
 
 function rebuildFonts()
-  fontHeader = renderCreateFont(data['settings']['headerFontName'], data['settings']['headerFontSize'], 5)
+  fontHeader = renderCreateFont(data['settings']['headerFontName'], data['settings']['headerFontSize'], data['settings']['headerFontFlags'])
+  fontList = renderCreateFont(data['settings']['listFontName'], data['settings']['listFontSize'], data['settings']['listFontFlags'])
 end
 
 
@@ -571,8 +658,8 @@ function renderList(x, y)
   renderFontDrawText(fontHeader, u8:decode(data['settings']['headerText'])..' ['..#onlineUsers..']:', x, y, data['settings']['headerFontColor'])
   renderPosY = renderPosY + data['settings']['headerFontSize']
   for i, v in ipairs(onlineUsers) do
-    renderPosY = renderPosY + data['settings']['headerFontSize'] * 2
-    renderFontDrawText(fontHeader, v['nickname']..' ['..v['id']..']', x, renderPosY, data['lists'][v['listid']]['color'])
+    renderPosY = renderPosY + data['settings']['listFontSize'] * 2
+    renderFontDrawText(fontList, v['nickname']..' ['..v['id']..']', x, renderPosY, data['lists'][v['listid']]['color'])
   end
 end
 
