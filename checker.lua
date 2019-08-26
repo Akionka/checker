@@ -131,6 +131,11 @@ function sampev.onPlayerJoin(id, color, isNPC, nickname)
   ]]
 
   rebuildUsers()
+  for i, v in ipairs(onlineUsers) do
+    if v['nickname'] == nickname then
+      alert('Пользователь {9932cc}'..v['nickname']..'{FFFFFF} присоединился к серверу.')
+    end
+  end
 end
 
 
@@ -141,6 +146,9 @@ function sampev.onPlayerQuit(id, reason)
 
   for i, v in ipairs(onlineUsers) do
     if v['id'] == id then
+      if data['settings']['notificationsAboutJoinsAndQuits'] then
+        alert('Пользователь {9932cc}'..v['nickname']..'{FFFFFF} покинул сервер.')
+      end
       table.remove(onlineUsers, i)
       break
     end
@@ -148,7 +156,7 @@ function sampev.onPlayerQuit(id, reason)
 end
 
 
-local mainWindowState       = imgui.ImBool(true)
+local mainWindowState       = imgui.ImBool(false)
 local listFontNameBuffer    = imgui.ImBuffer('Arial', 256)
 local listFontSizeBuffer    = imgui.ImInt(9)
 local listFontFlags         = 5
@@ -429,7 +437,7 @@ function imgui.OnDrawFrame()
             imgui.Text('Автор: Akionka')
             imgui.Text('Версия: '..thisScript().version_num..' ('..thisScript().version..')')
             imgui.Text('Команды: /checker, /users')
-            if updatesavaliable then
+            if updatesAvaliable then
               if imgui.Button('Скачать обновление', imgui.ImVec2(150, 0)) then
                 update('https://raw.githubusercontent.com/Akionka/checker/master/checker.lua')
                 mainWindowState.v = false
