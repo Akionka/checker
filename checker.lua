@@ -9,26 +9,20 @@ require 'deps' {
   'fyp:moon-imgui',
 }
 
---[[
-   _____   _         ____     _____   ______     _____   _______         _____    _        ______               _____   ______
-  / ____| | |       / __ \   / ____| |  ____|   |_   _| |__   __|       |  __ \  | |      |  ____|     /\      / ____| |  ____|
- | |      | |      | |  | | | (___   | |__        | |      | |          | |__) | | |      | |__       /  \    | (___   | |__
- | |      | |      | |  | |  \___ \  |  __|       | |      | |          |  ___/  | |      |  __|     / /\ \    \___ \  |  __|
- | |____  | |____  | |__| |  ____) | | |____     _| |_     | |     _    | |      | |____  | |____   / ____ \   ____) | | |____
-  \_____| |______|  \____/  |_____/  |______|   |_____|    |_|    ( )   |_|      |______| |______| /_/    \_\ |_____/  |______|
-                                                                  |/
-]]
 
 local sampev           = require 'lib.samp.events'
 local encoding         = require 'encoding'
 local imgui            = require 'imgui'
-local dlstatus         = require 'moonloader'.download_status
+
 local updatesAvaliable = false
+
 encoding.default       = 'cp1251'
 local u8               = encoding.UTF8
+
 local prefix           = 'Checker'
-local loadedUsers    = {}
-local onlineUsers    = {}
+
+local loadedUsers      = {}
+local onlineUsers      = {}
 local data             = {
   settings  = {
     alwaysAutoCheckUpdates          = true,
@@ -58,7 +52,8 @@ local data             = {
     },
   },
 }
-tempBuffers = {}
+
+local tempBuffers = {}
 
 
 function applyCustomStyle()
