@@ -1,7 +1,7 @@
 script_name('Checker')
 script_author('akionka')
-script_version('2.2.0')
-script_version_number(25)
+script_version('2.2.1')
+script_version_number(26)
 script_moonloader(27)
 
 require 'deps' {
@@ -50,7 +50,9 @@ local data             = {
     renderHotKey                    = {v={0x71}},
     renderHotKeyType                = false,
     renderTime                      = 3000,
-    theme                           = 0
+    theme                           = 0,
+    renderID                        = true,
+    renderLevel                     = true,
   },
   lists     = {
     {
@@ -59,7 +61,7 @@ local data             = {
       ip        = '127.0.0.1',
       port      = 7777,
       color     = 0xFFFFFFFF,
-      users     = {'West_Side', 'Drop_Table'}
+      users     = {'West_Side', 'Drop_Table'},
     },
   },
 }
@@ -417,6 +419,14 @@ function imgui.OnDrawFrame()
             end
             if imgui.Checkbox('Прятать при открытии чата', imgui.ImBool(data['settings']['hideOnOpenChat']))then
               data['settings']['hideOnOpenChat'] = not data['settings']['hideOnOpenChat']
+              saveData()
+            end
+            if imgui.Checkbox('Показывать ID', imgui.ImBool(data['settings']['renderID'])) then
+              data['settings']['renderID'] = not data['settings']['renderID']
+              saveData()
+            end
+            if imgui.Checkbox('Показывать Level', imgui.ImBool(data['settings']['renderLevel'])) then
+              data['settings']['renderLevel'] = not data['settings']['renderLevel']
               saveData()
             end
             if imgui.InputText('Название шрифта списка', listFontNameBuffer) then
@@ -777,7 +787,11 @@ function rebuildUsers()
     for i = 0, sampGetMaxPlayerId(false) do
       if sampIsPlayerConnected(i) then
         if sampGetPlayerNickname(i) == u8:decode(v['nickname']) then
-          table.insert(onlineUsers, {nickname = u8:decode(v['nickname']), id = i, listid = v['listid']})
+          table.insert(onlineUsers, {
+            nickname = u8:decode(v['nickname']),
+            id = i,
+            listid = v['listid'],
+          })
         end
       end
     end
@@ -791,7 +805,8 @@ function renderList(x, y)
   renderPosY = renderPosY + data['settings']['headerFontSize']
   for i, v in ipairs(onlineUsers) do
     renderPosY = renderPosY + data['settings']['listFontSize'] * 2
-    renderFontDrawText(fontList, v['nickname']..' ['..v['id']..']', x, renderPosY, data['lists'][v['listid']]['color'])
+    local nicknameText, idText, lvlText = v['nickname'], data['settings']['renderID'] and '['..v['id']..']' or '', data['settings']['renderLevel'] and ' LVL: '..sampGetPlayerScore(v['id']) or ''
+    renderFontDrawText(fontList, nicknameText..idText..lvlText, x, renderPosY, data['lists'][v['listid']]['color'])
   end
 end
 
