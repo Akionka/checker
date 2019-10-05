@@ -555,6 +555,7 @@ function imgui.OnDrawFrame()
             if imgui.Button('Bug report [VK]', imgui.ImVec2(150, 0)) then os.execute('explorer "https://vk.com/akionka"') end
             imgui.SameLine()
             if imgui.Button('Bug report [Telegram]', imgui.ImVec2(150, 0)) then os.execute('explorer "https://teleg.run/akionka"') end
+            imgui.Text('Тема')
             if imgui.ListBox('##theme', themeBuffer, {'Purple', 'Black'}, imgui.ImInt(2)) then
               data['settings']['theme'] = themeBuffer.v
               applyCustomStyle()
