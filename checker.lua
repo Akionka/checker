@@ -7,7 +7,8 @@ script_moonloader(27)
 require 'deps' {
   'fyp:samp-lua',
   'fyp:moon-imgui',
-  'kikito:semver'
+  'kikito:semver',
+  'donhomka:mimgui-addons',
 }
 
 
@@ -15,6 +16,8 @@ local sampev           = require 'lib.samp.events'
 local encoding         = require 'encoding'
 local imgui            = require 'imgui'
 local v                = require 'semver'
+local rkeys            = require 'rkeys'
+imgui.HotKey           = require 'imgui_addons'.HotKey
 
 local updatesAvaliable = false
 local lastTagAvaliable = '1.0'
@@ -23,6 +26,7 @@ encoding.default       = 'cp1251'
 local u8               = encoding.UTF8
 
 local prefix           = 'Checker'
+local bindID           = 0
 
 local loadedUsers      = {}
 local onlineUsers      = {}
@@ -43,6 +47,9 @@ local data             = {
     headerText                      = 'Users online',
     headerPosX                      = 450,
     headerPosY                      = 450,
+    renderHotKey                    = {v={0x71}},
+    renderHotKeyType                = false,
+    renderTime                      = 3000,
   },
   lists     = {
     {
@@ -167,6 +174,7 @@ local headerPosXBuffer      = imgui.ImInt(450)
 local headerPosYBuffer      = imgui.ImInt(450)
 local headerFont            = renderCreateFont('Arial', 9, 5)
 local listFont              = renderCreateFont('Arial', 9, 5)
+local renderTimeBuffer      = imgui.ImInt(3000)
 
 
 local selectedTab           = 0
@@ -174,6 +182,7 @@ local selectedList          = 0
 local movingInProgress      = false
 
 function imgui.OnDrawFrame()
+	local tLastKeys = {}
   if mainWindowState.v then
     local resX, resY = getScreenResolution()
     imgui.SetNextWindowSize(imgui.ImVec2(576, 350), 2)
@@ -303,6 +312,7 @@ function imgui.OnDrawFrame()
       if selectedTab == 2 then
         imgui.BeginGroup()
           imgui.BeginChild('Center panel')
+            imgui.PushItemWidth(100)
             if imgui.Checkbox('Всегда автоматически проверять обновления', imgui.ImBool(data['settings']['alwaysAutoCheckUpdates'])) then
               data['settings']['alwaysAutoCheckUpdates'] = not data['settings']['alwaysAutoCheckUpdates']
               saveData()
@@ -315,6 +325,24 @@ function imgui.OnDrawFrame()
               data['settings']['renderOnScreen'] = not data['settings']['renderOnScreen']
               saveData()
             end
+            if not data['settings']['renderOnScreen'] then
+              if imgui.HotKey('##renderhotkey', data['settings']['renderHotKey'], tLastKeys, 100) then
+                rkeys.changeHotKey(bindID, data['settings']['renderHotKey'].v)
+                saveData()
+              end
+              imgui.SameLine()
+              imgui.Text('Хоткей рендера на экране')
+              if imgui.Button(data['settings']['renderHotKeyType'] and 'Нажатие' or 'Удержание', imgui.ImVec2(100, 0)) then
+                data['settings']['renderHotKeyType'] = not data['settings']['renderHotKeyType']
+                saveData()
+              end
+              if data['settings']['renderHotKeyType'] then
+                if imgui.InputInt('Время рендера (в мс, 1000 мс = 1 сек)', renderTimeBuffer, 1, 100) then
+                  data['settings']['renderTime'] = renderTimeBuffer.v
+                  saveData()
+                end
+              end
+            end
             if imgui.Checkbox('Прятать на скриншотах', imgui.ImBool(data['settings']['hideOnScreenshot'])) then
               data['settings']['hideOnScreenshot'] = not data['settings']['hideOnScreenshot']
               saveData()
@@ -323,7 +351,6 @@ function imgui.OnDrawFrame()
               data['settings']['hideOnOpenChat'] = not data['settings']['hideOnOpenChat']
               saveData()
             end
-            imgui.PushItemWidth(100)
             if imgui.InputText('Название шрифта списка', listFontNameBuffer) then
               data['settings']['listFontName'] = listFontNameBuffer.v
               saveData()
@@ -490,6 +517,18 @@ function main()
     if #onlineUsers > 10 then alert('В данный момент на сервере находится {9932cc}'..#onlineUsers..' {FFFFFF}пользователь(-я, -ей) из ваших списков.') end
   end)
 
+  bindID = rkeys.registerHotKey(data['settings']['renderHotKey'].v, data['settings']['renderHotKeyType'], function ()
+    if data['settings']['renderHotKeyType'] then
+      local startTime = os.clock()
+      while(os.clock() - startTime < data['settings']['renderTime']/1000) do
+        renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+        wait(0)
+      end
+    else
+      renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+    end
+	end)
+
   while true do
     wait(0)
     if movingInProgress then
@@ -621,6 +660,7 @@ function loadData()
   headerPosXBuffer.v      = data['settings']['headerPosX'] or 450
   headerPosYBuffer.v      = data['settings']['headerPosY'] or 450
   headerTextBuffer.v      = data['settings']['headerText'] or 'Users online'
+  renderTimeBuffer.v      = data['settings']['renderTime'] or 3000
   headerFontColorBuffer   = imgui.ImFloat3(r/255, g/255, b/255)
 end
 
