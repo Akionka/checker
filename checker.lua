@@ -1,7 +1,7 @@
 script_name('Checker')
 script_author('akionka')
-script_version('2.1.1')
-script_version_number(23)
+script_version('2.2.0')
+script_version_number(25)
 script_moonloader(27)
 
 require 'deps' {
@@ -712,6 +712,15 @@ end
 
 
 function loadData()
+  local function loadSettings(table, dest)
+    for k, v in pairs(table) do
+      if type(v) == 'table' then
+        loadSettings(v, dest[k])
+      end
+      dest[k] = v
+    end
+  end
+
   if not doesFileExist(getWorkingDirectory()..'\\config\\checker.json') then
     local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'w+')
     configFile:write(encodeJson(data))
@@ -720,7 +729,9 @@ function loadData()
   end
 
   local configFile = io.open(getWorkingDirectory()..'\\config\\checker.json', 'r')
-  data = decodeJson(configFile:read('*a'))
+  local tempData = decodeJson(configFile:read('*a'))
+  loadSettings(tempData['settings'], data['settings'])
+  data['lists'] = tempData['lists'] or data['list']
   configFile:close()
 
   local a, r, g, b        = explode_argb(data['settings']['headerFontColor'])
