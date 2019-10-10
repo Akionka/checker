@@ -1,6 +1,6 @@
 script_name('Checker')
 script_author('akionka')
-script_version('2.2.2')
+script_version('1.2.2')
 script_version_number(27)
 script_moonloader(27)
 
@@ -614,7 +614,7 @@ function checkUpdates()
 end
 
 function update()
-  downloadUrlToFile('https://github.com/akionka/'..thisScript()['name']..'/releases/download/'..lastTagAvaliable..'/autotaker.lua', thisScript()['path'], function(_, status, _, _)
+  downloadUrlToFile('https://github.com/akionka/'..thisScript()['name']..'/releases/download/'..lastTagAvaliable..'/checker.lua', thisScript()['path'], function(_, status, _, _)
     if status == 6 then
       alert('Новая версия установлена! Чтобы скрипт обновился нужно либо перезайти в игру, либо ...')
       alert('... если у вас есть автоперезагрузка скриптов, то новая версия уже готова и снизу вы увидите приветственное сообщение.')
