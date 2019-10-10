@@ -659,7 +659,7 @@ function checkUpdates()
           if v(info[1]['tag_name']) > v(thisScript()['version']) then
             updatesAvaliable = true
             lastTagAvaliable = info[1]['tag_name']
-            alert('Найдено объявление. Текущая версия: {9932cc}'..thisScript()['version']..'{FFFFFF}, новая версия: {9932cc}'..info[0]['version']..'{FFFFFF}')
+            alert('Найдено объявление. Текущая версия: {9932cc}'..thisScript()['version']..'{FFFFFF}, новая версия: {9932cc}'..info[1]['tag_name']..'{FFFFFF}')
             return true
           else
             updatesAvaliable = false
