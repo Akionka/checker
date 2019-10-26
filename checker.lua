@@ -253,7 +253,7 @@ function imgui.OnDrawFrame()
                 end
               end
           imgui.EndChild()
-          if imgui.Button('Добавить', imgui.ImVec2(70, 0)) then
+          if imgui.Button('Добавить', imgui.ImVec2((selectedList == 0 or data['lists'][selectedList]['isbuiltin']) and 145 or 70, 0)) then
             local name               = sampGetCurrentServerName()
             local ip, port           = sampGetCurrentServerAddress()
             tempBuffers['listTitle'] = imgui.ImBuffer(u8:encode(name), 128)
@@ -263,10 +263,10 @@ function imgui.OnDrawFrame()
             imgui.OpenPopup('Добавление списка')
           end
           imgui.SameLine()
-          if selectedList ~= 0 then
-            if imgui.Button('Удалить', imgui.ImVec2(70, 0)) and not data['lists'][selectedList]['isbuiltin'] then
-              imgui.OpenPopup('Удаление списка')
-            end
+
+          if selectedList ~= 0 and not data['lists'][selectedList]['isbuiltin'] and imgui.Button('Удалить', imgui.ImVec2(70, 0)) then
+            imgui.OpenPopup('Удаление списка')
+          end
           end
 
           if imgui.BeginPopupModal('Добавление списка', nil, 64) then
