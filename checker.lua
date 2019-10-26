@@ -135,7 +135,7 @@ function applyCustomStyle()
 end
 
 
-function sampev.onSendClientJoin(version, mod, nickname, challengeResponse, joinAuthKey, clientVer, unknown)
+function sampev.onSendClientJoin()
   --[[
     Обнуление онлайн пользователей, загруженных пользователей после (ре)коннекта.
   ]]
@@ -151,12 +151,7 @@ function sampev.onPlayerJoin(id, color, isNPC, nickname)
     Слава богу луа достаточно шустрый и почти не лагает.
   ]]
 
-  rebuildUsers()
-  for i, v in ipairs(onlineUsers) do
-    if v['nickname'] == nickname then
-      alert('Пользователь {9932cc}'..v['nickname']..'{FFFFFF} присоединился к серверу.')
-    end
-  end
+  addUser(nickname)
 end
 
 
@@ -165,6 +160,25 @@ function sampev.onPlayerQuit(id, reason)
     Исключение из списка онлайн пользователей покинувшего сервер пользователя.
   ]]
 
+  removeUser(id)
+end
+
+function addUser(nickname)
+  for i, v in ipairs(loadedUsers) do
+    if v['nickname'] == nickname then
+      if data['settings']['notificationsAboutJoinsAndQuits'] then
+        alert('Пользователь {9932cc}'..v['nickname']..'{FFFFFF} присоединился к серверу.')
+      end
+      table.insert(onlineUsers, {
+        nickname = u8:decode(v['nickname']),
+        id = i,
+        listid = v['listid'],
+      })
+    end
+  end
+end
+
+function removeUser(id)
   for i, v in ipairs(onlineUsers) do
     if v['id'] == id then
       if data['settings']['notificationsAboutJoinsAndQuits'] then
@@ -266,7 +280,6 @@ function imgui.OnDrawFrame()
 
           if selectedList ~= 0 and not data['lists'][selectedList]['isbuiltin'] and imgui.Button('Удалить', imgui.ImVec2(70, 0)) then
             imgui.OpenPopup('Удаление списка')
-          end
           end
 
           if imgui.BeginPopupModal('Добавление списка', nil, 64) then
