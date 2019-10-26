@@ -1,7 +1,7 @@
 script_name('Checker')
 script_author('akionka')
-script_version('2.2.2')
-script_version_number(27)
+script_version('2.2.3')
+script_version_number(28)
 script_moonloader(27)
 
 require 'deps' {
