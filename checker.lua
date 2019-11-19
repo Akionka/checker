@@ -1,14 +1,13 @@
 script_name('Checker')
 script_author('akionka')
-script_version('2.2.3')
-script_version_number(28)
+script_version('2.2.4')
+script_version_number(20)
 script_moonloader(27)
 
 require 'deps' {
   'fyp:samp-lua',
   'fyp:moon-imgui',
-  'kikito:semver',
-  'donhomka:mimgui-addons',
+  'Akionka:lua-semver',
 }
 
 
