@@ -139,8 +139,7 @@ function sampev.onSendClientJoin()
     Обнуление онлайн пользователей, загруженных пользователей после (ре)коннекта.
   ]]
 
-  loadedUsers    = {}
-  onlineUsers    = {}
+  loadUsers()
 end
 
 
