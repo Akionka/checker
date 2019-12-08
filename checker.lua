@@ -150,7 +150,7 @@ function sampev.onPlayerJoin(id, color, isNPC, nickname)
     Слава богу луа достаточно шустрый и почти не лагает.
   ]]
 
-  addUser(nickname)
+  addUser(id, nickname)
 end
 
 
@@ -162,15 +162,15 @@ function sampev.onPlayerQuit(id, reason)
   removeUser(id)
 end
 
-function addUser(nickname)
+function addUser(id, nickname)
   for i, v in ipairs(loadedUsers) do
     if v['nickname'] == nickname then
       if data['settings']['notificationsAboutJoinsAndQuits'] then
-        alert('Пользователь {9932cc}'..v['nickname']..'{FFFFFF} присоединился к серверу.')
+        alert('Пользователь {9932cc}'..v['nickname']..'  ['..id..']{FFFFFF} присоединился к серверу.')
       end
       table.insert(onlineUsers, {
         nickname = u8:decode(v['nickname']),
-        id = i,
+        id = id,
         listid = v['listid'],
       })
     end
@@ -181,7 +181,7 @@ function removeUser(id)
   for i, v in ipairs(onlineUsers) do
     if v['id'] == id then
       if data['settings']['notificationsAboutJoinsAndQuits'] then
-        alert('Пользователь {9932cc}'..v['nickname']..'{FFFFFF} покинул сервер.')
+        alert('Пользователь {9932cc}'..v['nickname']..'  ['..id..']{FFFFFF} покинул сервер.')
       end
       table.remove(onlineUsers, i)
       break
