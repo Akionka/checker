@@ -1,6 +1,6 @@
 script_name('Checker')
 script_author('akionka')
-script_version('2.2.5')
+script_version('2.2.6')
 script_version_number(21)
 script_moonloader(27)
 
@@ -138,8 +138,7 @@ function sampev.onSendClientJoin()
   --[[
     Обнуление онлайн пользователей, загруженных пользователей после (ре)коннекта.
   ]]
-
-  loadUsers()
+  lua_thread.create(loadUsers)
 end
 
 
@@ -149,7 +148,7 @@ function sampev.onPlayerJoin(id, color, isNPC, nickname)
     Слава богу луа достаточно шустрый и почти не лагает.
   ]]
 
-  addUser(id, nickname)
+  lua_thread.create(addUser, id, nickname)
 end
 
 
@@ -157,8 +156,7 @@ function sampev.onPlayerQuit(id, reason)
   --[[
     Исключение из списка онлайн пользователей покинувшего сервер пользователя.
   ]]
-
-  removeUser(id)
+  lua_thread.create(removeUser, id)
 end
 
 function addUser(id, nickname)
