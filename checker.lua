@@ -47,7 +47,7 @@ local data             = {
     headerPosX                      = 450,
     headerPosY                      = 450,
     renderHotKey                    = {v={0x71}},
-    renderHotKeyType                = false,
+    renderHotKeyType                = 0,
     renderTime                      = 3000,
     renderID                        = true,
     renderLevel                     = true,
@@ -138,6 +138,7 @@ function sampev.onSendClientJoin()
   --[[
     Обнуление онлайн пользователей, загруженных пользователей после (ре)коннекта.
   ]]
+
   lua_thread.create(loadUsers)
 end
 
@@ -156,6 +157,7 @@ function sampev.onPlayerQuit(id, reason)
   --[[
     Исключение из списка онлайн пользователей покинувшего сервер пользователя.
   ]]
+
   lua_thread.create(removeUser, id)
 end
 
@@ -194,7 +196,7 @@ local listFontFlags         = 5
 local headerFontNameBuffer  = imgui.ImBuffer('Arial', 256)
 local headerFontSizeBuffer  = imgui.ImInt(9)
 local headerFontFlags       = 5
-local headerFontColorBuffer = imgui.ImFloat3(0, 0, 0)
+local headerFontColorBuffer = imgui.ImFloat3(1, 1, 1)
 local headerTextBuffer      = imgui.ImBuffer('Users online', 32)
 local headerPosXBuffer      = imgui.ImInt(450)
 local headerPosYBuffer      = imgui.ImInt(450)
