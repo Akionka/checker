@@ -1,6 +1,6 @@
 script_name('Checker')
 script_author('akionka')
-script_version('2.2.6')
+script_version('2.2.7')
 script_version_number(21)
 script_moonloader(27)
 
@@ -357,11 +357,11 @@ function imgui.OnDrawFrame()
               end
               imgui.SameLine()
               imgui.Text('Хоткей рендера на экране')
-              if imgui.Button(data['settings']['renderHotKeyType'] and 'Нажатие' or 'Удержание', imgui.ImVec2(100, 0)) then
-                data['settings']['renderHotKeyType'] = not data['settings']['renderHotKeyType']
+              if imgui.Button(data['settings']['renderHotKeyType'] == 0 and 'Нажатие' or data['settings']['renderHotKeyType'] == 1 and 'Зажатие' or 'Переключение', imgui.ImVec2(100, 0)) then
+                data['settings']['renderHotKeyType'] = (data['settings']['renderHotKeyType'] + 1 ) % 3
                 saveData()
               end
-              if data['settings']['renderHotKeyType'] then
+              if data['settings']['renderHotKeyType'] == 0 then
                 if imgui.InputInt('Время рендера (в мс, 1000 мс = 1 сек)', renderTimeBuffer, 1, 100) then
                   data['settings']['renderTime'] = renderTimeBuffer.v
                   saveData()
@@ -549,15 +549,25 @@ function main()
     if #onlineUsers > 10 then alert('В данный момент на сервере находится {9932cc}'..#onlineUsers..' {FFFFFF}пользователь(-я, -ей) из ваших списков.') end
   end)
 
-  bindID = rkeys.registerHotKey(data['settings']['renderHotKey'].v, data['settings']['renderHotKeyType'], function ()
-    if data['settings']['renderHotKeyType'] then
+  bindID = rkeys.registerHotKey(data['settings']['renderHotKey']['v'], data['settings']['renderHotKeyType'], function ()
+    if data['settings']['renderOnScreen'] then return end
+    if data['settings']['renderHotKeyType'] == 0 then
       local startTime = os.clock()
       while(os.clock() - startTime < data['settings']['renderTime']/1000) do
         renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
         wait(0)
       end
-    else
-      renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+    elseif data['settings']['renderHotKeyType'] == 1 then
+      while isKeyDown(data['settings']['renderHotKey']['v'][1]) do
+        renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+        wait(0)
+      end
+    elseif data['settings']['renderHotKeyType'] == 2 then
+      while isKeyDown(data['settings']['renderHotKey']['v'][1]) do wait(100) end
+      while not isKeyJustPressed(data['settings']['renderHotKey']['v'][1]) do
+        renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+        wait(0)
+      end
     end
   end)
 
