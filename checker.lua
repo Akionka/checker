@@ -1,6 +1,6 @@
 script_name('Checker')
 script_author('akionka')
-script_version('2.2.7')
+script_version('2.2.8')
 script_version_number(21)
 script_moonloader(27)
 
