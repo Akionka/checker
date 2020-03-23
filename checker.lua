@@ -15,7 +15,6 @@ local sampev           = require 'lib.samp.events'
 local encoding         = require 'encoding'
 local imgui            = require 'imgui'
 local v                = require 'semver'
-local rkeys            = require 'rkeys'
 imgui.HotKey           = require 'imgui_addons'.HotKey
 
 local updatesAvaliable = false
@@ -33,7 +32,6 @@ local data             = {
   settings  = {
     alwaysAutoCheckUpdates          = true,
     notificationsAboutJoinsAndQuits = true,
-    renderOnScreen                  = true,
     hideOnScreenshot                = false,
     hideOnOpenChat                  = false,
     listFontName                    = 'Arial',
@@ -48,6 +46,7 @@ local data             = {
     headerPosY                      = 450,
     renderHotKey                    = {v={0x71}},
     renderHotKeyType                = 0,
+    isRenderEnabledByDefault        = false,
     renderTime                      = 3000,
     renderID                        = true,
     renderLevel                     = true,
@@ -208,6 +207,7 @@ local renderTimeBuffer      = imgui.ImInt(3000)
 local selectedTab           = 0
 local selectedList          = 0
 local movingInProgress      = false
+local hasToggled            = false
 
 function imgui.OnDrawFrame()
   local tLastKeys = {}
@@ -348,27 +348,22 @@ function imgui.OnDrawFrame()
               data['settings']['notificationsAboutJoinsAndQuits'] = not data['settings']['notificationsAboutJoinsAndQuits']
               saveData()
             end
-            if imgui.Checkbox('Рендер на экране', imgui.ImBool(data['settings']['renderOnScreen'])) then
-              data['settings']['renderOnScreen'] = not data['settings']['renderOnScreen']
+            if imgui.Button(data['settings']['renderHotKeyType'] == 0 and 'Постоянно' or data['settings']['renderHotKeyType'] == 1 and 'Нажатие' or data['settings']['renderHotKeyType'] == 2 and 'Зажатие' or 'Переключение', imgui.ImVec2(100, 0)) then
+              data['settings']['renderHotKeyType'] = (data['settings']['renderHotKeyType'] + 1 ) % 4
               saveData()
             end
-            if not data['settings']['renderOnScreen'] then
-              if imgui.HotKey('##renderhotkey', data['settings']['renderHotKey'], tLastKeys, 100) then
-                rkeys.changeHotKey(bindID, data['settings']['renderHotKey'].v)
-                saveData()
-              end
-              imgui.SameLine()
-              imgui.Text('Хоткей рендера на экране')
-              if imgui.Button(data['settings']['renderHotKeyType'] == 0 and 'Нажатие' or data['settings']['renderHotKeyType'] == 1 and 'Зажатие' or 'Переключение', imgui.ImVec2(100, 0)) then
-                data['settings']['renderHotKeyType'] = (data['settings']['renderHotKeyType'] + 1 ) % 3
-                saveData()
-              end
-              if data['settings']['renderHotKeyType'] == 0 then
-                if imgui.InputInt('Время рендера (в мс, 1000 мс = 1 сек)', renderTimeBuffer, 1, 100) then
-                  data['settings']['renderTime'] = renderTimeBuffer.v
-                  saveData()
-                end
-              end
+            if data['settings']['renderHotKeyType'] ~= 0 and imgui.HotKey('##renderhotkey', data['settings']['renderHotKey'], tLastKeys, 100) then
+              saveData()
+            end
+            imgui.SameLine()
+            imgui.Text('Хоткей рендера на экране')
+            if data['settings']['renderHotKeyType'] == 1 and imgui.InputInt('Время рендера (в мс, 1000 мс = 1 сек)', renderTimeBuffer, 1, 100) then
+              data['settings']['renderTime'] = renderTimeBuffer.v
+              saveData()
+            end
+            if data['settings']['renderHotKeyType'] == 3 and imgui.Checkbox('Рендерить после запуска', imgui.ImBool(data['settings']['isRenderEnabledByDefault'])) then
+              data['settings']['isRenderEnabledByDefault'] = not data['settings']['isRenderEnabledByDefault']
+              saveData()
             end
             if imgui.Checkbox('Прятать на скриншотах', imgui.ImBool(data['settings']['hideOnScreenshot'])) then
               data['settings']['hideOnScreenshot'] = not data['settings']['hideOnScreenshot']
@@ -551,28 +546,6 @@ function main()
     if #onlineUsers > 10 then alert('В данный момент на сервере находится {9932cc}'..#onlineUsers..' {FFFFFF}пользователь(-я, -ей) из ваших списков.') end
   end)
 
-  bindID = rkeys.registerHotKey(data['settings']['renderHotKey']['v'], data['settings']['renderHotKeyType'], function ()
-    if data['settings']['renderOnScreen'] then return end
-    if data['settings']['renderHotKeyType'] == 0 then
-      local startTime = os.clock()
-      while(os.clock() - startTime < data['settings']['renderTime']/1000) do
-        renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
-        wait(0)
-      end
-    elseif data['settings']['renderHotKeyType'] == 1 then
-      while isKeyDown(data['settings']['renderHotKey']['v'][1]) do
-        renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
-        wait(0)
-      end
-    elseif data['settings']['renderHotKeyType'] == 2 then
-      while isKeyDown(data['settings']['renderHotKey']['v'][1]) do wait(100) end
-      while not isKeyJustPressed(data['settings']['renderHotKey']['v'][1]) do
-        renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
-        wait(0)
-      end
-    end
-  end)
-
   while true do
     wait(0)
     if movingInProgress then
@@ -595,10 +568,25 @@ function main()
         alert('Новые координаты установлены.')
         saveData()
       end
-
     end
-    if not movingInProgress and data['settings']['renderOnScreen'] and (not isKeyDown(0x77) or not data['settings']['hideOnScreenshot']) and (not sampIsChatInputActive() or not data['settings']['hideOnOpenChat']) then
-      renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+    if not movingInProgress and (not isKeyDown(0x77) or not data['settings']['hideOnScreenshot']) and (not sampIsChatInputActive() or not data['settings']['hideOnOpenChat']) then
+      if data['settings']['renderHotKeyType'] == 0 then
+        renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+      elseif data['settings']['renderHotKeyType'] == 1 and isKeyJustPressed(data['settings']['renderHotKey']['v'][1]) then
+        local startTime = os.clock()
+        while(os.clock() - startTime < data['settings']['renderTime']/1000) do
+          renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+          wait(0)
+        end
+      elseif data['settings']['renderHotKeyType'] == 2 and isKeyDown(data['settings']['renderHotKey']['v'][1]) then
+        renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+      elseif data['settings']['renderHotKeyType'] == 3 and isKeyJustPressed(data['settings']['renderHotKey']['v'][1]) or (data['settings']['isRenderEnabledByDefault'] and not hasToggled) then
+        while isKeyDown(data['settings']['renderHotKey']['v'][1]) do wait(100) end
+        while not isKeyJustPressed(data['settings']['renderHotKey']['v'][1])  and data['settings']['renderHotKeyType'] == 3 do
+          renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
+          wait(0)
+        end
+      end
     end
     imgui.Process = mainWindowState.v
   end
