@@ -4,6 +4,7 @@ script_version('2.2.8')
 script_version_number(21)
 
 local moonloaderVersion = getMoonloaderVersion()
+local v = nil
 
 if moonloaderVersion >= 027 then
   require 'deps' {
@@ -11,57 +12,57 @@ if moonloaderVersion >= 027 then
     'fyp:moon-imgui',
     'Akionka:lua-semver',
   }
-  local v                = require 'semver'
+  v = require 'semver'
 end
 
 
-local sampev           = require 'lib.samp.events'
-local encoding         = require 'encoding'
-local imgui            = require 'imgui'
-imgui.HotKey           = require 'imgui_addons'.HotKey
+local sampev = require 'lib.samp.events'
+local encoding = require 'encoding'
+local imgui = require 'imgui'
+imgui.HotKey = require 'imgui_addons'.HotKey
 
 local updatesAvaliable = false
 local lastTagAvaliable = '1.0'
 
-encoding.default       = 'cp1251'
-local u8               = encoding.UTF8
+encoding.default = 'cp1251'
+local u8 = encoding.UTF8
 
-local prefix           = 'Checker'
-local bindID           = 0
+local prefix = 'Checker'
+local bindID = 0
 
-local loadedUsers      = {}
-local onlineUsers      = {}
-local data             = {
-  settings  = {
-    alwaysAutoCheckUpdates          = true,
+local loadedUsers = {}
+local onlineUsers = {}
+local data = {
+  settings = {
+    alwaysAutoCheckUpdates = true,
     notificationsAboutJoinsAndQuits = true,
-    hideOnScreenshot                = false,
-    hideOnOpenChat                  = false,
-    listFontName                    = 'Arial',
-    listFontSize                    = 9,
-    listFontFlags                   = 5,
-    headerFontName                  = 'Arial',
-    headerFontSize                  = 9,
-    headerFontColor                 = 0xFFFFFFFF,
-    headerFontFlags                 = 5,
-    headerText                      = 'Users online',
-    headerPosX                      = 450,
-    headerPosY                      = 450,
-    renderHotKey                    = {v={0x71}},
-    renderHotKeyType                = 0,
-    isRenderEnabledByDefault        = false,
-    renderTime                      = 3000,
-    renderID                        = true,
-    renderLevel                     = true,
+    hideOnScreenshot = false,
+    hideOnOpenChat = false,
+    listFontName = 'Arial',
+    listFontSize = 9,
+    listFontFlags = 5,
+    headerFontName = 'Arial',
+    headerFontSize = 9,
+    headerFontColor = 0xFFFFFFFF,
+    headerFontFlags = 5,
+    headerText = 'Users online',
+    headerPosX = 450,
+    headerPosY = 450,
+    renderHotKey = {v = {0x71}},
+    renderHotKeyType = 0,
+    isRenderEnabledByDefault = false,
+    renderTime = 3000,
+    renderID = true,
+    renderLevel = true,
   },
-  lists     = {
+  lists = {
     {
       isbuiltin = true,
-      title     = 'Common',
-      ip        = '127.0.0.1',
-      port      = 7777,
-      color     = 0xFFFFFFFF,
-      users     = {'West_Side', 'Drop_Table'},
+      title = 'Common',
+      ip = '127.0.0.1',
+      port = 7777,
+      color = 0xFFFFFFFF,
+      users = {'West_Side', 'Drop_Table'},
     },
   },
 }
@@ -71,9 +72,9 @@ local tempBuffers = {}
 
 function applyCustomStyle()
   imgui.SwitchContext()
-  local style  = imgui.GetStyle()
+  local style = imgui.GetStyle()
   local colors = style.Colors
-  local clr    = imgui.Col
+  local clr = imgui.Col
   local function ImVec4(color)
     local r = bit.band(bit.rshift(color, 24), 0xFF)
     local g = bit.band(bit.rshift(color, 16), 0xFF)
@@ -82,56 +83,56 @@ function applyCustomStyle()
     return imgui.ImVec4(r/255, g/255, b/255, a/255)
   end
 
-  style['WindowRounding']      = 10.0
-  style['WindowTitleAlign']    = imgui.ImVec2(0.5, 0.5)
+  style['WindowRounding'] = 10.0
+  style['WindowTitleAlign'] = imgui.ImVec2(0.5, 0.5)
   style['ChildWindowRounding'] = 5.0
-  style['FrameRounding']       = 5.0
-  style['ItemSpacing']         = imgui.ImVec2(5.0, 5.0)
-  style['ScrollbarSize']       = 13.0
-  style['ScrollbarRounding']   = 5
+  style['FrameRounding'] = 5.0
+  style['ItemSpacing'] = imgui.ImVec2(5.0, 5.0)
+  style['ScrollbarSize'] = 13.0
+  style['ScrollbarRounding'] = 5
 
-  colors[clr['Text']]                 = ImVec4(0xFFFFFFFF)
-  colors[clr['TextDisabled']]         = ImVec4(0x212121FF)
-  colors[clr['WindowBg']]             = ImVec4(0x212121FF)
-  colors[clr['ChildWindowBg']]        = ImVec4(0x21212180)
-  colors[clr['PopupBg']]              = ImVec4(0x212121FF)
-  colors[clr['Border']]               = ImVec4(0xFFFFFF10)
-  colors[clr['BorderShadow']]         = ImVec4(0x21212100)
-  colors[clr['FrameBg']]              = ImVec4(0xC3E88D90)
-  colors[clr['FrameBgHovered']]       = ImVec4(0xC3E88DFF)
-  colors[clr['FrameBgActive']]        = ImVec4(0x61616150)
-  colors[clr['TitleBg']]              = ImVec4(0x212121FF)
-  colors[clr['TitleBgActive']]        = ImVec4(0x212121FF)
-  colors[clr['TitleBgCollapsed']]     = ImVec4(0x212121FF)
-  colors[clr['MenuBarBg']]            = ImVec4(0x21212180)
-  colors[clr['ScrollbarBg']]          = ImVec4(0x212121FF)
-  colors[clr['ScrollbarGrab']]        = ImVec4(0xEEFFFF20)
+  colors[clr['Text']] = ImVec4(0xFFFFFFFF)
+  colors[clr['TextDisabled']] = ImVec4(0x212121FF)
+  colors[clr['WindowBg']] = ImVec4(0x212121FF)
+  colors[clr['ChildWindowBg']] = ImVec4(0x21212180)
+  colors[clr['PopupBg']] = ImVec4(0x212121FF)
+  colors[clr['Border']] = ImVec4(0xFFFFFF10)
+  colors[clr['BorderShadow']] = ImVec4(0x21212100)
+  colors[clr['FrameBg']] = ImVec4(0xC3E88D90)
+  colors[clr['FrameBgHovered']] = ImVec4(0xC3E88DFF)
+  colors[clr['FrameBgActive']] = ImVec4(0x61616150)
+  colors[clr['TitleBg']] = ImVec4(0x212121FF)
+  colors[clr['TitleBgActive']] = ImVec4(0x212121FF)
+  colors[clr['TitleBgCollapsed']] = ImVec4(0x212121FF)
+  colors[clr['MenuBarBg']] = ImVec4(0x21212180)
+  colors[clr['ScrollbarBg']] = ImVec4(0x212121FF)
+  colors[clr['ScrollbarGrab']] = ImVec4(0xEEFFFF20)
   colors[clr['ScrollbarGrabHovered']] = ImVec4(0xEEFFFF10)
-  colors[clr['ScrollbarGrabActive']]  = ImVec4(0x80CBC4FF)
-  colors[clr['ComboBg']]              = colors[clr['PopupBg']]
-  colors[clr['CheckMark']]            = ImVec4(0x212121FF)
-  colors[clr['SliderGrab']]           = ImVec4(0x212121FF)
-  colors[clr['SliderGrabActive']]     = ImVec4(0x80CBC4FF)
-  colors[clr['Button']]               = ImVec4(0xC3E88D90)
-  colors[clr['ButtonHovered']]        = ImVec4(0xC3E88DFF)
-  colors[clr['ButtonActive']]         = ImVec4(0x61616150)
-  colors[clr['Header']]               = ImVec4(0x151515FF)
-  colors[clr['HeaderHovered']]        = ImVec4(0x252525FF)
-  colors[clr['HeaderActive']]         = ImVec4(0x303030FF)
-  colors[clr['Separator']]            = colors[clr['Border']]
-  colors[clr['SeparatorHovered']]     = ImVec4(0x212121FF)
-  colors[clr['SeparatorActive']]      = ImVec4(0x212121FF)
-  colors[clr['ResizeGrip']]           = ImVec4(0x212121FF)
-  colors[clr['ResizeGripHovered']]    = ImVec4(0x212121FF)
-  colors[clr['ResizeGripActive']]     = ImVec4(0x212121FF)
-  colors[clr['CloseButton']]          = ImVec4(0x212121FF)
-  colors[clr['CloseButtonHovered']]   = ImVec4(0xD41223FF)
-  colors[clr['CloseButtonActive']]    = ImVec4(0xD41223FF)
-  colors[clr['PlotLines']]            = ImVec4(0x212121FF)
-  colors[clr['PlotLinesHovered']]     = ImVec4(0x212121FF)
-  colors[clr['PlotHistogram']]        = ImVec4(0x212121FF)
+  colors[clr['ScrollbarGrabActive']] = ImVec4(0x80CBC4FF)
+  colors[clr['ComboBg']] = colors[clr['PopupBg']]
+  colors[clr['CheckMark']] = ImVec4(0x212121FF)
+  colors[clr['SliderGrab']] = ImVec4(0x212121FF)
+  colors[clr['SliderGrabActive']] = ImVec4(0x80CBC4FF)
+  colors[clr['Button']] = ImVec4(0xC3E88D90)
+  colors[clr['ButtonHovered']] = ImVec4(0xC3E88DFF)
+  colors[clr['ButtonActive']] = ImVec4(0x61616150)
+  colors[clr['Header']] = ImVec4(0x151515FF)
+  colors[clr['HeaderHovered']] = ImVec4(0x252525FF)
+  colors[clr['HeaderActive']] = ImVec4(0x303030FF)
+  colors[clr['Separator']] = colors[clr['Border']]
+  colors[clr['SeparatorHovered']] = ImVec4(0x212121FF)
+  colors[clr['SeparatorActive']] = ImVec4(0x212121FF)
+  colors[clr['ResizeGrip']] = ImVec4(0x212121FF)
+  colors[clr['ResizeGripHovered']] = ImVec4(0x212121FF)
+  colors[clr['ResizeGripActive']] = ImVec4(0x212121FF)
+  colors[clr['CloseButton']] = ImVec4(0x212121FF)
+  colors[clr['CloseButtonHovered']] = ImVec4(0xD41223FF)
+  colors[clr['CloseButtonActive']] = ImVec4(0xD41223FF)
+  colors[clr['PlotLines']] = ImVec4(0x212121FF)
+  colors[clr['PlotLinesHovered']] = ImVec4(0x212121FF)
+  colors[clr['PlotHistogram']] = ImVec4(0x212121FF)
   colors[clr['PlotHistogramHovered']] = ImVec4(0x212121FF)
-  colors[clr['TextSelectedBg']]       = ImVec4(0x212121FF)
+  colors[clr['TextSelectedBg']] = ImVec4(0x212121FF)
   colors[clr['ModalWindowDarkening']] = ImVec4(0x21212180)
 end
 
@@ -191,26 +192,26 @@ function removeUser(id)
 end
 
 
-local mainWindowState       = imgui.ImBool(false)
-local listFontNameBuffer    = imgui.ImBuffer('Arial', 256)
-local listFontSizeBuffer    = imgui.ImInt(9)
-local listFontFlags         = 5
-local headerFontNameBuffer  = imgui.ImBuffer('Arial', 256)
-local headerFontSizeBuffer  = imgui.ImInt(9)
-local headerFontFlags       = 5
+local mainWindowState = imgui.ImBool(false)
+local listFontNameBuffer = imgui.ImBuffer('Arial', 256)
+local listFontSizeBuffer = imgui.ImInt(9)
+local listFontFlags = 5
+local headerFontNameBuffer = imgui.ImBuffer('Arial', 256)
+local headerFontSizeBuffer = imgui.ImInt(9)
+local headerFontFlags = 5
 local headerFontColorBuffer = imgui.ImFloat3(1, 1, 1)
-local headerTextBuffer      = imgui.ImBuffer('Users online', 32)
-local headerPosXBuffer      = imgui.ImInt(450)
-local headerPosYBuffer      = imgui.ImInt(450)
-local headerFont            = renderCreateFont('Arial', 9, 5)
-local listFont              = renderCreateFont('Arial', 9, 5)
-local renderTimeBuffer      = imgui.ImInt(3000)
+local headerTextBuffer = imgui.ImBuffer('Users online', 32)
+local headerPosXBuffer = imgui.ImInt(450)
+local headerPosYBuffer = imgui.ImInt(450)
+local headerFont = renderCreateFont('Arial', 9, 5)
+local listFont = renderCreateFont('Arial', 9, 5)
+local renderTimeBuffer = imgui.ImInt(3000)
 
 
-local selectedTab           = 0
-local selectedList          = 0
-local movingInProgress      = false
-local hasToggled            = false
+local selectedTab = 0
+local selectedList = 0
+local movingInProgress = false
+local hasToggled = false
 
 function imgui.OnDrawFrame()
   local tLastKeys = {}
@@ -237,8 +238,8 @@ function imgui.OnDrawFrame()
                 if imgui.IsMouseDoubleClicked(0) then
                   local a, r, g, b = explode_argb(data['lists'][selectedList]['color'])
                   tempBuffers['listTitle'] = imgui.ImBuffer(data['lists'][selectedList]['title'], 128)
-                  tempBuffers['listIp']    = imgui.ImBuffer(data['lists'][selectedList]['ip'], 16)
-                  tempBuffers['listPort']  = imgui.ImInt(data['lists'][selectedList]['port'])
+                  tempBuffers['listIp'] = imgui.ImBuffer(data['lists'][selectedList]['ip'], 16)
+                  tempBuffers['listPort'] = imgui.ImInt(data['lists'][selectedList]['port'])
                   tempBuffers['listColor'] = imgui.ImFloat3(r/255, g/255, b/255)
                   imgui.OpenPopup('Изменить настройки списка##'..i)
                 end
@@ -253,11 +254,11 @@ function imgui.OnDrawFrame()
                 if imgui.Button('Готово', imgui.ImVec2(120, 0)) then
                   data['lists'][selectedList] = {
                     isbuiltin = data['lists'][selectedList]['isbuiltin'],
-                    title     = tempBuffers['listTitle'].v,
-                    ip        = tempBuffers['listIp'].v,
-                    port      = tempBuffers['listPort'].v,
-                    color     = join_argb(255, tempBuffers['listColor'].v[1]*255, tempBuffers['listColor'].v[2]*255, tempBuffers['listColor'].v[3]*255),
-                    users     = data['lists'][selectedList]['users']
+                    title = tempBuffers['listTitle'].v,
+                    ip = tempBuffers['listIp'].v,
+                    port = tempBuffers['listPort'].v,
+                    color = join_argb(255, tempBuffers['listColor'].v[1]*255, tempBuffers['listColor'].v[2]*255, tempBuffers['listColor'].v[3]*255),
+                    users = data['lists'][selectedList]['users']
                   }
                   saveData()
                   imgui.CloseCurrentPopup()
@@ -269,11 +270,11 @@ function imgui.OnDrawFrame()
               end
           imgui.EndChild()
           if imgui.Button('Добавить', imgui.ImVec2((selectedList == 0 or data['lists'][selectedList]['isbuiltin']) and 145 or 70, 0)) then
-            local name               = sampGetCurrentServerName()
-            local ip, port           = sampGetCurrentServerAddress()
+            local name = sampGetCurrentServerName()
+            local ip, port = sampGetCurrentServerAddress()
             tempBuffers['listTitle'] = imgui.ImBuffer(u8:encode(name), 128)
-            tempBuffers['listIp']    = imgui.ImBuffer(ip, 16)
-            tempBuffers['listPort']  = imgui.ImInt(port)
+            tempBuffers['listIp'] = imgui.ImBuffer(ip, 16)
+            tempBuffers['listPort'] = imgui.ImInt(port)
             tempBuffers['listColor'] = imgui.ImFloat3(0, 0, 0)
             imgui.OpenPopup('Добавление списка')
           end
@@ -293,11 +294,11 @@ function imgui.OnDrawFrame()
             if imgui.Button('Готово', imgui.ImVec2(120, 0)) then
               table.insert(data['lists'], {
                 isbuiltin = false,
-                title     = tempBuffers['listTitle'].v,
-                ip        = tempBuffers['listIp'].v,
-                port      = tempBuffers['listPort'].v,
-                color     = join_argb(255, tempBuffers['listColor'].v[1]*255, tempBuffers['listColor'].v[2]*255, tempBuffers['listColor'].v[3]*255),
-                users     = {''}
+                title = tempBuffers['listTitle'].v,
+                ip = tempBuffers['listIp'].v,
+                port = tempBuffers['listPort'].v,
+                color = join_argb(255, tempBuffers['listColor'].v[1]*255, tempBuffers['listColor'].v[2]*255, tempBuffers['listColor'].v[3]*255),
+                users = {''}
               })
               saveData()
               imgui.CloseCurrentPopup()
@@ -479,7 +480,7 @@ function imgui.OnDrawFrame()
               saveData()
             end
             if imgui.Button('Указать позицию списка с помощью курсора') then
-              movingInProgress  = true
+              movingInProgress = true
               mainWindowState.v = false
               alert('Нажмите {9932cc}ЛКМ{FFFFFF}, чтобы завершить. Нажмите {9932cc}ПКМ{FFFFFF}, чтобы отменить.')
             end
@@ -698,24 +699,24 @@ function loadData()
   data['lists'] = tempData['lists'] or data['list']
   configFile:close()
 
-  local a, r, g, b        = explode_argb(data['settings']['headerFontColor'])
-  listFontNameBuffer.v    = data['settings']['listFontName'] or 'Arial'
-  listFontSizeBuffer.v    = data['settings']['listFontSize'] or 9
-  listFontFlags           = data['settings']['listFontFlags'] or 5
-  headerFontNameBuffer.v  = data['settings']['headerFontName'] or 'Arial'
-  headerFontSizeBuffer.v  = data['settings']['headerFontSize'] or 9
-  headerFontFlags         = data['settings']['headerFontFlags'] or 5
-  headerPosXBuffer.v      = data['settings']['headerPosX'] or 450
-  headerPosYBuffer.v      = data['settings']['headerPosY'] or 450
-  headerTextBuffer.v      = data['settings']['headerText'] or 'Users online'
-  renderTimeBuffer.v      = data['settings']['renderTime'] or 3000
-  headerFontColorBuffer   = imgui.ImFloat3(r/255, g/255, b/255)
+  local a, r, g, b = explode_argb(data['settings']['headerFontColor'])
+  listFontNameBuffer.v = data['settings']['listFontName'] or 'Arial'
+  listFontSizeBuffer.v = data['settings']['listFontSize'] or 9
+  listFontFlags = data['settings']['listFontFlags'] or 5
+  headerFontNameBuffer.v = data['settings']['headerFontName'] or 'Arial'
+  headerFontSizeBuffer.v = data['settings']['headerFontSize'] or 9
+  headerFontFlags = data['settings']['headerFontFlags'] or 5
+  headerPosXBuffer.v = data['settings']['headerPosX'] or 450
+  headerPosYBuffer.v = data['settings']['headerPosY'] or 450
+  headerTextBuffer.v = data['settings']['headerText'] or 'Users online'
+  renderTimeBuffer.v = data['settings']['renderTime'] or 3000
+  headerFontColorBuffer = imgui.ImFloat3(r/255, g/255, b/255)
 end
 
 
 function loadUsers()
-  loadedUsers    = {}
-  onlineUsers    = {}
+  loadedUsers = {}
+  onlineUsers = {}
   local ip, port = sampGetCurrentServerAddress()
 
   for i, v in ipairs(data['lists']) do
