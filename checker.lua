@@ -2,19 +2,22 @@ script_name('Checker')
 script_author('akionka')
 script_version('2.2.8')
 script_version_number(21)
-script_moonloader(27)
 
-require 'deps' {
-  'fyp:samp-lua',
-  'fyp:moon-imgui',
-  'Akionka:lua-semver',
-}
+local moonloaderVersion = getMoonloaderVersion()
+
+if moonloaderVersion >= 027 then
+  require 'deps' {
+    'fyp:samp-lua',
+    'fyp:moon-imgui',
+    'Akionka:lua-semver',
+  }
+  local v                = require 'semver'
+end
 
 
 local sampev           = require 'lib.samp.events'
 local encoding         = require 'encoding'
 local imgui            = require 'imgui'
-local v                = require 'semver'
 imgui.HotKey           = require 'imgui_addons'.HotKey
 
 local updatesAvaliable = false
@@ -340,7 +343,7 @@ function imgui.OnDrawFrame()
         imgui.BeginGroup()
           imgui.BeginChild('Center panel')
             imgui.PushItemWidth(100)
-            if imgui.Checkbox('Всегда автоматически проверять обновления', imgui.ImBool(data['settings']['alwaysAutoCheckUpdates'])) then
+            if imgui.Checkbox('Всегда автоматически проверять обновления (moonloader version >= 0.27)', imgui.ImBool(data['settings']['alwaysAutoCheckUpdates'])) then
               data['settings']['alwaysAutoCheckUpdates'] = not data['settings']['alwaysAutoCheckUpdates']
               saveData()
             end
@@ -491,17 +494,19 @@ function imgui.OnDrawFrame()
             imgui.Text('Автор: Akionka')
             imgui.Text('Версия: '..thisScript()['version_num']..' ('..thisScript()['version']..')')
             imgui.Text('Команды: /checker, /users')
-            if updatesAvaliable then
-              if imgui.Button('Скачать обновление', imgui.ImVec2(150, 0)) then
-                update()
-                mainWindowState.v = false
+            if moonloaderVersion >= 027 then
+              if updatesAvaliable then
+                if imgui.Button('Скачать обновление', imgui.ImVec2(150, 0)) then
+                  update()
+                  mainWindowState.v = false
+                end
+              else
+                if imgui.Button('Проверить обновления', imgui.ImVec2(150, 0)) then
+                  checkUpdates()
+                end
               end
-            else
-              if imgui.Button('Проверить обновления', imgui.ImVec2(150, 0)) then
-                checkUpdates()
-              end
+              imgui.SameLine()
             end
-            imgui.SameLine()
             if imgui.Button('Группа ВКонтакте', imgui.ImVec2(150, 0)) then os.execute('explorer "https://vk.com/akionkamods"') end
             if imgui.Button('Bug report [VK]', imgui.ImVec2(150, 0)) then os.execute('explorer "https://vk.com/akionka"') end
             imgui.SameLine()
@@ -528,7 +533,7 @@ function main()
   print(u8:decode('{FFFFFF}Версия: {9932cc}'..thisScript()['version']..'{FFFFFF}. Автор: {9932cc}Akionka{FFFFFF}.'))
   print(u8:decode('{FFFFFF}Приятного использования! :)'))
 
-  if data['settings']['alwaysAutoCheckUpdates'] then checkUpdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json') end
+  if moonloaderVersion > 027 and data['settings']['alwaysAutoCheckUpdates'] then checkUpdates('https://raw.githubusercontent.com/Akionka/checker/master/version.json') end
 
   sampRegisterChatCommand('checker', function()
     mainWindowState.v = not mainWindowState.v
