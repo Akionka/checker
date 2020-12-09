@@ -15,7 +15,7 @@ if moonloaderVersion >= 027 then
   v = require 'semver'
 end
 
-
+local wm = require 'windows.message'
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
 local imgui = require 'imgui'
@@ -69,6 +69,12 @@ local data = {
 
 local tempBuffers = {}
 
+local renderHotKeyTypes = {
+  [0] = 'Постоянно',
+  [1] = 'Нажатие',
+  [2] = 'Зажатие',
+  [3] = 'Переключение',
+}
 
 function applyCustomStyle()
   imgui.SwitchContext()
@@ -211,7 +217,7 @@ local renderTimeBuffer = imgui.ImInt(3000)
 local selectedTab = 0
 local selectedList = 0
 local movingInProgress = false
-local hasToggled = false
+local doRender = false
 
 function imgui.OnDrawFrame()
   local tLastKeys = {}
@@ -352,7 +358,7 @@ function imgui.OnDrawFrame()
               data['settings']['notificationsAboutJoinsAndQuits'] = not data['settings']['notificationsAboutJoinsAndQuits']
               saveData()
             end
-            if imgui.Button(data['settings']['renderHotKeyType'] == 0 and 'Постоянно' or data['settings']['renderHotKeyType'] == 1 and 'Нажатие' or data['settings']['renderHotKeyType'] == 2 and 'Зажатие' or 'Переключение', imgui.ImVec2(100, 0)) then
+            if imgui.Button(renderHotKeyTypes[data['settings']['renderHotKeyType']], imgui.ImVec2(100, 0)) then
               data['settings']['renderHotKeyType'] = (data['settings']['renderHotKeyType'] + 1 ) % 4
               saveData()
             end
@@ -552,46 +558,60 @@ function main()
     if #onlineUsers > 10 then alert('В данный момент на сервере находится {9932cc}'..#onlineUsers..' {FFFFFF}пользователь(-я, -ей) из ваших списков.') end
   end)
 
+  addEventHandler('onWindowMessage', function(msg, wparam, lparam)
+    if msg == wm.WM_RBUTTONUP then
+      if movingInProgress then
+        mainWindowState.v = true
+        showCursor(false, false)
+        movingInProgress = false
+        alert('Перемещение списка с помощью мыши отменено')
+      end
+    elseif msg == wm.WM_LBUTTONUP then
+      if movingInProgress then
+        data['settings']['headerPosX'], data['settings']['headerPosY'] = bit.band(lparam, 0xFFFF), bit.band(bit.rshift(lparam, 16), 0xFFFF)
+        headerPosXBuffer.v = data['settings']['headerPosX']
+        headerPosYBuffer.v = data['settings']['headerPosY']
+        mainWindowState.v = true
+        showCursor(false, false)
+        movingInProgress = false
+        alert('Новые координаты установлены')
+        saveData()
+      end
+    elseif msg == wm.WM_KEYUP then
+      if data['settings']['renderHotKeyType'] == 1 then
+        if wparam == data['settings']['renderHotKey']['v'][1] then
+           lua_thread.create(function()
+            local startTime = os.clock()
+            while(os.clock() - startTime < data['settings']['renderTime']/1000) do
+              doRender = true
+              wait(0)
+            end
+            doRender = false
+          end)
+        end
+      elseif data['settings']['renderHotKeyType'] == 2 then
+        doRender = false
+      elseif data['settings']['renderHotKeyType'] == 3 then
+        doRender = not doRender
+      end
+    elseif msg == wm.WM_KEYDOWN then
+      if wparam == data['settings']['renderHotKey']['v'][1] then
+        if data['settings']['renderHotKeyType'] == 2 then
+          doRender = true
+        end
+      end
+    end
+  end)
+
   while true do
     wait(0)
     if movingInProgress then
       showCursor(true, true)
       renderPosX, renderPosY = getCursorPos()
       renderList(renderPosX, renderPosY)
-      if isKeyJustPressed(0x02) then
-        mainWindowState.v = true
-        showCursor(false, false)
-        movingInProgress = false
-        alert('Отменено.')
-      end
-      if isKeyJustPressed(0x01) then
-        data['settings']['headerPosX'], data['settings']['headerPosY'] = getCursorPos()
-        headerPosXBuffer.v = data['settings']['headerPosX']
-        headerPosYBuffer.v = data['settings']['headerPosY']
-        mainWindowState.v = true
-        showCursor(false, false)
-        movingInProgress = false
-        alert('Новые координаты установлены.')
-        saveData()
-      end
-    end
-    if not movingInProgress and (not isKeyDown(0x77) or not data['settings']['hideOnScreenshot']) and (not sampIsChatInputActive() or not data['settings']['hideOnOpenChat']) then
-      if data['settings']['renderHotKeyType'] == 0 then
+    elseif (not isKeyDown(0x77) or not data['settings']['hideOnScreenshot']) and (not sampIsChatInputActive() or not data['settings']['hideOnOpenChat']) then
+      if data['settings']['renderHotKeyType'] == 0 or doRender then
         renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
-      elseif data['settings']['renderHotKeyType'] == 1 and isKeyJustPressed(data['settings']['renderHotKey']['v'][1]) then
-        local startTime = os.clock()
-        while(os.clock() - startTime < data['settings']['renderTime']/1000) do
-          renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
-          wait(0)
-        end
-      elseif data['settings']['renderHotKeyType'] == 2 and isKeyDown(data['settings']['renderHotKey']['v'][1]) then
-        renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
-      elseif data['settings']['renderHotKeyType'] == 3 and isKeyJustPressed(data['settings']['renderHotKey']['v'][1]) or (data['settings']['isRenderEnabledByDefault'] and not hasToggled) then
-        while isKeyDown(data['settings']['renderHotKey']['v'][1]) do wait(100) end
-        while not isKeyJustPressed(data['settings']['renderHotKey']['v'][1])  and data['settings']['renderHotKeyType'] == 3 do
-          renderList(data['settings']['headerPosX'], data['settings']['headerPosY'])
-          wait(0)
-        end
       end
     end
     imgui.Process = mainWindowState.v
