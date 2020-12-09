@@ -572,8 +572,8 @@ function main()
         saveData()
       end
     elseif msg == wm.WM_KEYUP then
-      if data.settings.renderHotKeyType == 1 then
-        if wparam == data.settings.renderHotKey.v[1] then
+      if wparam == data.settings.renderHotKey.v[1] then
+        if data.settings.renderHotKeyType == 1 then
            lua_thread.create(function()
             local startTime = os.clock()
             while(os.clock() - startTime < data.settings.renderTime/1000) do
@@ -582,11 +582,11 @@ function main()
             end
             doRender = false
           end)
+        elseif data.settings.renderHotKeyType == 2 then
+          doRender = false
+        elseif data.settings.renderHotKeyType == 3 then
+          doRender = not doRender
         end
-      elseif data.settings.renderHotKeyType == 2 then
-        doRender = false
-      elseif data.settings.renderHotKeyType == 3 then
-        doRender = not doRender
       end
     elseif msg == wm.WM_KEYDOWN then
       if wparam == data.settings.renderHotKey.v[1] then
