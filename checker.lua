@@ -1,7 +1,7 @@
 script_name('Checker')
-script_author('akionka')
-script_version('2.2.8')
-script_version_number(21)
+script_author('Akionka')
+script_version('2.3.0')
+script_version_number(22)
 
 local moonloaderVersion = getMoonloaderVersion()
 local v = nil
