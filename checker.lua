@@ -570,6 +570,7 @@ function main()
         movingInProgress = false
         alert('Новые координаты установлены')
         saveData()
+        consumeWindowMessage(true, true)
       end
     elseif msg == wm.WM_KEYUP then
       if wparam == data.settings.renderHotKey.v[1] then
